@@ -21,8 +21,9 @@ const AEGIS_ART = "/manus-storage/aegis-rift-custom-frame_bb4c57ca.png";
 const PRISM_SHIELD_ART = "/manus-storage/prismatic-aegis-shield_5ac4d617.png";
 
 type ConsoleView = "command" | "missions" | "roster" | "rewards" | "achievements" | "settings" | "hangar" | "battle";
-type CampaignProgress = { credits: number; completed: MissionKey[]; achievements: string[]; battlesWon: number };
+type CampaignProgress = { credits: number; completed: MissionKey[]; medals: MissionKey[]; achievements: string[]; battlesWon: number };
 type CabinetSettings = { reducedFx: boolean; scanlines: boolean; contrast: boolean };
+type BossIntroData = { missionKey: MissionKey; threat: string; title: string; designation: string; directive: string; transmission: string; artUrl: string; accent: string };
 
 const INITIAL_MISSION = MISSIONS["level-01"];
 const INITIAL_HUD: HudState = {
@@ -57,7 +58,7 @@ const INITIAL_HUD: HudState = {
   message: "COMMAND LINK // SELECT A LEVEL",
 };
 
-const DEFAULT_PROGRESS: CampaignProgress = { credits: 480, completed: [], achievements: [], battlesWon: 0 };
+const DEFAULT_PROGRESS: CampaignProgress = { credits: 480, completed: [], medals: [], achievements: [], battlesWon: 0 };
 const DEFAULT_SETTINGS: CabinetSettings = { reducedFx: false, scanlines: true, contrast: false };
 const ACHIEVEMENTS = [
   { id: "first-link", title: "FIRST LINK", copy: "Secure Level 01.", icon: "◇" },
@@ -65,6 +66,12 @@ const ACHIEVEMENTS = [
   { id: "vault-breaker", title: "VAULT BREAKER", copy: "Reach the Final Stage.", icon: "▣" },
   { id: "zero-crown", title: "CROWN BREAKER", copy: "Secure Level 20.", icon: "✦" },
 ];
+
+const BOSS_INTROS: Record<string, BossIntroData> = {
+  "level-07": { missionKey: "level-07", threat: "STAGE I COMMANDER", title: "EMBER WRAITH", designation: "RAILHEAD EXECUTIONER", directive: "FRONTIER COMMAND", transmission: "YOU TOOK THE RAILS. NOW PAY THE FURNACE TAX.", artUrl: "/manus-storage/ember-wraith-custom-frame_75ff79a0.png", accent: "ember" },
+  "level-14": { missionKey: "level-14", threat: "STAGE II COMMANDER", title: "WARDEN HELIX", designation: "FOUNDRY OVERSIGHT INTELLIGENCE", directive: "CINDER FOUNDRY", transmission: "ALL UNAUTHORIZED FRAMES WILL BE MELTED INTO THE LINE.", artUrl: "/manus-storage/warden-helix-boss-frame_114334d4.png", accent: "helix" },
+  "level-20": { missionKey: "level-20", threat: "FINAL STAGE COMMANDER", title: "ZERO CROWN", designation: "NIGHT VAULT CATASTROPHE ENGINE", directive: "NIGHT VAULT", transmission: "YOU DID NOT BREAK THE CROWN. YOU ACTIVATED IT.", artUrl: "/manus-storage/zero-crown-final-boss-frame_f74aa26d.png", accent: "crown" },
+};
 
 function loadLocal<T>(key: string, fallback: T): T {
   try {
@@ -124,6 +131,20 @@ function initialConsoleView(): ConsoleView {
   return validViews.includes(requested as ConsoleView) ? requested as ConsoleView : "command";
 }
 
+function initialBossIntro() {
+  const requested = new URLSearchParams(window.location.search).get("boss");
+  return requested ? BOSS_INTROS[requested] ?? null : null;
+}
+
+function BossIntro({ intro, onEngage, onSkip }: { intro: BossIntroData; onEngage: () => void; onSkip: () => void }) {
+  return <section className={`boss-intro-overlay accent-${intro.accent}`} role="dialog" aria-modal="true" aria-label={`${intro.title} boss introduction`}>
+    <div className="boss-intro-noise" /><div className="boss-intro-scanline" />
+    <div className="boss-intro-header"><span>HOSTILE SIGNATURE DETECTED</span><span>THREAT // MAXIMUM</span></div>
+    <div className="boss-intro-frame"><div className="boss-intro-portrait"><span className="boss-reticle" /><img src={intro.artUrl} alt={`${intro.title} enemy combat frame`} /></div><div className="boss-intro-copy"><span className="boss-kicker">{intro.threat}</span><h2>{intro.title}</h2><p className="boss-designation">{intro.designation}</p><div className="boss-divider" /><p className="boss-transmission">“{intro.transmission}”</p><dl><dt>THEATRE</dt><dd>{intro.directive}</dd><dt>DIRECTIVE</dt><dd>BREAK COMMAND LINK</dd></dl><div className="boss-intro-actions"><button type="button" className="primary-console-button" onClick={onEngage}>ENGAGE BOSS FRAME</button><button type="button" className="boss-skip-button" onClick={onSkip}>SKIP UPLINK</button></div></div></div>
+    <div className="boss-intro-footer">BOSS UPLINK // PRESS ENGAGE TO INITIATE COMBAT</div>
+  </section>;
+}
+
 export default function GameCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const startedRef = useRef(false);
@@ -132,13 +153,20 @@ export default function GameCanvas() {
   const [hud, setHud] = useState(INITIAL_HUD);
   const [view, setView] = useState<ConsoleView>(initialConsoleView);
   const [loadout, setLoadout] = useState<LoadoutKey>("vanguard");
-  const [missionKey, setMissionKey] = useState<MissionKey>("level-01");
+  const [missionKey, setMissionKey] = useState<MissionKey>(() => initialBossIntro()?.missionKey ?? "level-01");
   const [stageFilter, setStageFilter] = useState<CampaignStage>(1);
   const [progress, setProgress] = useState<CampaignProgress>(() => loadLocal("pixel-mecha-campaign", DEFAULT_PROGRESS));
   const [settings, setSettings] = useState<CabinetSettings>(() => loadLocal("pixel-mecha-settings", DEFAULT_SETTINGS));
+  const [bossIntro, setBossIntro] = useState<BossIntroData | null>(initialBossIntro);
 
   useEffect(() => { window.localStorage.setItem("pixel-mecha-campaign", JSON.stringify(progress)); }, [progress]);
   useEffect(() => { window.localStorage.setItem("pixel-mecha-settings", JSON.stringify(settings)); }, [settings]);
+  useEffect(() => {
+    const preview = initialBossIntro();
+    if (!preview) return;
+    setMissionKey(preview.missionKey);
+    setBossIntro(preview);
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -166,12 +194,14 @@ export default function GameCanvas() {
       const fresh = !current.completed.includes(hud.missionKey);
       const completed = fresh ? [...current.completed, hud.missionKey] : current.completed;
       const credits = current.credits + (fresh ? hud.missionReward : Math.ceil(hud.missionReward / 4));
+      const medals = new Set(current.medals ?? []);
+      if (fresh) medals.add(hud.missionKey);
       const achievements = new Set(current.achievements);
       if (completed.includes("level-01")) achievements.add("first-link");
       if (CAMPAIGN_LEVELS.filter((item) => item.stage === 1).every((item) => completed.includes(item.key))) achievements.add("frontier-cleared");
       if (completed.some((key) => MISSIONS[key]?.stage === 3)) achievements.add("vault-breaker");
       if (completed.includes("level-20")) achievements.add("zero-crown");
-      return { credits, completed, battlesWon: current.battlesWon + 1, achievements: Array.from(achievements) };
+      return { credits, completed, medals: Array.from(medals), battlesWon: current.battlesWon + 1, achievements: Array.from(achievements) };
     });
   }, [hud.matchState, hud.missionKey, hud.missionReward]);
 
@@ -179,11 +209,14 @@ export default function GameCanvas() {
   const selected = LOADOUTS[loadout];
   const completeSet = new Set(progress.completed.filter((key) => Boolean(MISSIONS[key])));
   const completeLevels = Array.from(completeSet);
+  const medalSet = new Set((progress.medals ?? []).filter((key) => Boolean(MISSIONS[key])));
   const nextOpen = CAMPAIGN_LEVELS.find((item) => !completeSet.has(item.key));
   const unlockedLevel = nextOpen?.level ?? 20;
   const stageLevels = CAMPAIGN_LEVELS.filter((item) => item.stage === stageFilter);
   const onAction = (action: InputAction, pressed: boolean) => gameRef.current?.setAction(action, pressed);
-  const launch = () => { rewardedMatchRef.current = ""; gameRef.current?.startMatch(loadout, missionKey); setView("battle"); };
+  const launchBattle = () => { rewardedMatchRef.current = ""; gameRef.current?.startMatch(loadout, missionKey); setView("battle"); };
+  const launch = () => { const intro = BOSS_INTROS[missionKey]; if (intro) { setBossIntro(intro); return; } launchBattle(); };
+  const engageBoss = () => { setBossIntro(null); launchBattle(); };
   const returnCommand = () => { gameRef.current?.returnToSelect(); setView("command"); };
   const selectMission = (nextMission: MissionKey) => { setMissionKey(nextMission); setView("hangar"); };
   const setCabinet = (key: keyof CabinetSettings) => setSettings((current) => ({ ...current, [key]: !current[key] }));
@@ -218,5 +251,6 @@ export default function GameCanvas() {
         {view === "settings" && <section className="console-panel settings-panel"><div className="panel-heading"><span>CABINET CONTROL // LOCAL PROFILE</span><h2>SETTINGS</h2><p>Adjust the visual signal without changing gameplay rules or campaign progression.</p></div><div className="setting-list"><button type="button" onClick={() => setCabinet("scanlines")}><span><b>CRT SCANLINES</b><small>Adds a low-contrast cabinet screen texture.</small></span><i className={settings.scanlines ? "switch-on" : ""}>{settings.scanlines ? "ON" : "OFF"}</i></button><button type="button" onClick={() => setCabinet("reducedFx")}><span><b>REDUCED EFFECTS</b><small>Minimizes ambient sparks, engine trails, and stage motion.</small></span><i className={settings.reducedFx ? "switch-on" : ""}>{settings.reducedFx ? "ON" : "OFF"}</i></button><button type="button" onClick={() => setCabinet("contrast")}><span><b>HIGH-CONTRAST PANELS</b><small>Boosts text and interface plate separation.</small></span><i className={settings.contrast ? "switch-on" : ""}>{settings.contrast ? "ON" : "OFF"}</i></button><button type="button" onClick={() => gameRef.current?.toggleAudio()}><span><b>CABINET SOUND</b><small>Controls the arena music loop and combat chip effects.</small></span><i className={hud.soundOn ? "switch-on" : ""}>{hud.soundOn ? "ON" : "OFF"}</i></button></div></section>}
       </div>
     </section>}
+    {bossIntro && <BossIntro intro={bossIntro} onEngage={engageBoss} onSkip={engageBoss} />}
   </main>;
 }
