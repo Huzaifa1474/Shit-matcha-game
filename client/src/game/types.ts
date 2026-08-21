@@ -1,7 +1,7 @@
 import type { Scene } from "@babylonjs/core/scene";
 
-export type InputAction = "left" | "right" | "strike" | "guard" | "boost";
-export type MechaAction = "idle" | "move" | "strike" | "guard" | "damaged" | "down";
+export type InputAction = "left" | "right" | "strike" | "guard" | "boost" | "special";
+export type MechaAction = "idle" | "move" | "strike" | "special" | "guard" | "damaged" | "down";
 export type MatchState = "select" | "active" | "round-result" | "match-victory" | "match-defeat";
 export type LoadoutKey = "vanguard" | "ironclad" | "sparkrunner" | "bulwark" | "pulsewing";
 export type MissionKey = string;
@@ -10,17 +10,19 @@ export type TheatreClass = "frontier" | "foundry" | "vault";
 export type SurfaceKind = "riveted" | "rail" | "grate" | "cargo" | "magnetic" | "obsidian";
 export type ChassisKind = "balanced" | "heavy" | "scout" | "bulwark" | "winged" | "raider" | "brute" | "warden" | "phantom" | "crown";
 
-export interface MechaProfile { key: LoadoutKey | string; label: string; callsign: string; maxHp: number; speed: number; strikeDamage: number; guardMultiplier: number; frameScale: number; accent: string; flare: string; description: string; chassis: ChassisKind; }
+export type SpecialKind = "lunge" | "fortify" | "blink" | "slam" | "volley";
+export interface SpecialDefinition { key: string; name: string; tactical: string; kind: SpecialKind; damageMultiplier: number; range: number; cooldown: number; }
+export interface MechaProfile { key: LoadoutKey | string; label: string; callsign: string; maxHp: number; speed: number; strikeDamage: number; guardMultiplier: number; frameScale: number; accent: string; flare: string; description: string; chassis: ChassisKind; special?: SpecialDefinition; }
 export interface AiTuning { aggression: number; attackInterval: number; guardChance: number; pursuitRange: number; }
 export interface LocationDefinition { key: string; label: string; callout: string; surface: SurfaceKind; accent: string; atmosphere: string; }
 export interface MissionDefinition { key: MissionKey; code: string; title: string; stage: CampaignStage; stageLabel: string; level: number; theatre: string; objective: string; reward: number; difficulty: number; theatreClass: TheatreClass; location: LocationDefinition; backgroundUrl: string; enemyArtUrl: string; opponent: MechaProfile; ai: AiTuning; }
 
 export const LOADOUTS: Record<LoadoutKey, MechaProfile> = {
-  vanguard: { key: "vanguard", label: "AEGIS RIFT", callsign: "PILOT-01", maxHp: 100, speed: 3.45, strikeDamage: 15, guardMultiplier: 0.25, frameScale: 1, accent: "#236ee2", flare: "#38eaff", description: "Custom assault frame with a rail-saber guard and twin cyan vector thrusters.", chassis: "balanced" },
-  ironclad: { key: "ironclad", label: "IRONCLAD BASTION", callsign: "PILOT-03", maxHp: 125, speed: 2.75, strikeDamage: 17, guardMultiplier: 0.18, frameScale: 1.12, accent: "#54748a", flare: "#e6bd58", description: "Plated breach chassis built around a reinforced kinetic shield array.", chassis: "heavy" },
-  sparkrunner: { key: "sparkrunner", label: "SPARKRUNNER ARC", callsign: "PILOT-07", maxHp: 85, speed: 4.3, strikeDamage: 13, guardMultiplier: 0.33, frameScale: 0.9, accent: "#38a5ca", flare: "#7de8d0", description: "Fast relay hunter with a compact antenna crest and evasive booster frame.", chassis: "scout" },
-  bulwark: { key: "bulwark", label: "BULWARK-9", callsign: "PILOT-11", maxHp: 142, speed: 2.38, strikeDamage: 20, guardMultiplier: 0.15, frameScale: 1.2, accent: "#65777d", flare: "#ffbe3b", description: "Siege-frame interceptor with fortress shoulders and a high-mass cutter arm.", chassis: "bulwark" },
-  pulsewing: { key: "pulsewing", label: "PULSEWING NOVA", callsign: "PILOT-14", maxHp: 92, speed: 4.05, strikeDamage: 16, guardMultiplier: 0.28, frameScale: 0.94, accent: "#446bd1", flare: "#69e7ff", description: "Wing-fin combat frame that converts booster precision into strike tempo.", chassis: "winged" },
+  vanguard: { key: "vanguard", label: "AEGIS RIFT", callsign: "PILOT-01", maxHp: 100, speed: 3.45, strikeDamage: 15, guardMultiplier: 0.25, frameScale: 1, accent: "#236ee2", flare: "#38eaff", description: "Custom assault frame with a rail-saber guard and twin cyan vector thrusters.", chassis: "balanced", special: { key: "prism-breaker", name: "PRISM BREAKER", tactical: "Rail-saber lunge that closes a gap and pierces guard lines.", kind: "lunge", damageMultiplier: 1.68, range: 3.35, cooldown: 2.7 } },
+  ironclad: { key: "ironclad", label: "IRONCLAD BASTION", callsign: "PILOT-03", maxHp: 125, speed: 2.75, strikeDamage: 17, guardMultiplier: 0.18, frameScale: 1.12, accent: "#54748a", flare: "#e6bd58", description: "Plated breach chassis built around a reinforced kinetic shield array.", chassis: "heavy", special: { key: "bastion-crash", name: "BASTION CRASH", tactical: "Armored crash that keeps a kinetic guard active after impact.", kind: "fortify", damageMultiplier: 1.8, range: 2.55, cooldown: 3.35 } },
+  sparkrunner: { key: "sparkrunner", label: "SPARKRUNNER ARC", callsign: "PILOT-07", maxHp: 85, speed: 4.3, strikeDamage: 13, guardMultiplier: 0.33, frameScale: 0.9, accent: "#38a5ca", flare: "#7de8d0", description: "Fast relay hunter with a compact antenna crest and evasive booster frame.", chassis: "scout", special: { key: "arc-shift", name: "ARC SHIFT", tactical: "Vector blink into a fast close-range slash from outside standard reach.", kind: "blink", damageMultiplier: 1.42, range: 4.15, cooldown: 2.25 } },
+  bulwark: { key: "bulwark", label: "BULWARK-9", callsign: "PILOT-11", maxHp: 142, speed: 2.38, strikeDamage: 20, guardMultiplier: 0.15, frameScale: 1.2, accent: "#65777d", flare: "#ffbe3b", description: "Siege-frame interceptor with fortress shoulders and a high-mass cutter arm.", chassis: "bulwark", special: { key: "citadel-hammer", name: "CITADEL HAMMER", tactical: "High-mass ground slam with a wide shockwave hit zone.", kind: "slam", damageMultiplier: 2.14, range: 3.05, cooldown: 3.7 } },
+  pulsewing: { key: "pulsewing", label: "PULSEWING NOVA", callsign: "PILOT-14", maxHp: 92, speed: 4.05, strikeDamage: 16, guardMultiplier: 0.28, frameScale: 0.94, accent: "#446bd1", flare: "#69e7ff", description: "Wing-fin combat frame that converts booster precision into strike tempo.", chassis: "winged", special: { key: "nova-volley", name: "NOVA VOLLEY", tactical: "Wing-fin blast volley that carries the longest strike reach.", kind: "volley", damageMultiplier: 1.56, range: 4.65, cooldown: 3.1 } },
 };
 
 const STAGE_BACKGROUNDS: Record<TheatreClass, string> = { frontier: "/manus-storage/stage-one-scrapyard-dawn_c2c9282f.png", foundry: "/manus-storage/stage-two-cinder-foundry_0ec1dcff.png", vault: "/manus-storage/stage-three-night-vault_f0020e9b.png" };

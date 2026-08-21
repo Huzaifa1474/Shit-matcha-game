@@ -8,6 +8,7 @@ const ACTION_BY_KEY: Record<string, InputAction | "reset"> = {
   KeyJ: "strike",
   Space: "strike",
   KeyK: "guard",
+  KeyQ: "special",
   KeyL: "boost",
   ShiftLeft: "boost",
   ShiftRight: "boost",

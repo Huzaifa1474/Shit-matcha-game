@@ -24,3 +24,7 @@
 - [x] Implement grounded fighter contact, location-sensitive stage treatment, dynamic engine effects, and improved environmental motion.
 - [x] Add combo tracking, advanced strike chains, on-screen combo telemetry, and high-intensity combat feedback.
 - [x] Verify location changes across all stages, new controls, home presentation, desktop/mobile combat readability, logs, and production build output.
+- [x] Audit the loadout model, combat action state, input map, and special-effect extension points.
+- [x] Define a distinct tactical special move, cooldown, damage profile, and cue for every playable chassis.
+- [x] Implement the shared special input plus frame-specific move behavior, HUD telemetry, VFX, and impact resolution.
+- [x] Validate all five specials across desktop and mobile controls, visual state changes, build output, and runtime logs.

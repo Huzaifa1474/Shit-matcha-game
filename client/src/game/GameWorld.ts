@@ -8,14 +8,14 @@ import type { Scene } from "@babylonjs/core/scene";
 import { AudioManager } from "./AudioManager";
 import { InputManager } from "./InputManager";
 import { Mecha } from "./Mecha";
-import { LOADOUTS, MISSIONS, type HudState, type InputAction, type LoadoutKey, type MatchState, type MissionDefinition, type MissionKey } from "./types";
+import { LOADOUTS, MISSIONS, type HudState, type InputAction, type LoadoutKey, type MatchState, type MissionDefinition, type MissionKey, type SpecialDefinition } from "./types";
 
 const BACKDROP_URL = "/manus-storage/stage-one-scrapyard-dawn_c2c9282f.png";
 const BLUE_MECHA_URL = "/manus-storage/aegis-rift-custom-frame_bb4c57ca.png";
 const RED_MECHA_URL = "/manus-storage/ember-wraith-custom-frame_75ff79a0.png";
 
-type ImpactIntent = { attacker: Mecha; defender: Mecha };
-type ImpactResult = { attacker: Mecha; defender: Mecha; guarded: boolean; damage: number; inRange: boolean };
+type ImpactIntent = { attacker: Mecha; defender: Mecha; special?: SpecialDefinition };
+type ImpactResult = { attacker: Mecha; defender: Mecha; guarded: boolean; damage: number; inRange: boolean; special?: SpecialDefinition };
 
 export class GameWorld {
   readonly player: Mecha;
@@ -38,6 +38,7 @@ export class GameWorld {
   private lastStepAt = 0;
   private lastGuardAt = 0;
   private lastBoostAt = 0;
+  private lastSpecialAt = 0;
   private demoCycle = 0;
   private demoStart = 0;
   private impactFlash: AbstractMesh;
@@ -52,7 +53,7 @@ export class GameWorld {
   private comboUntil = 0;
   private overdriveUntil = 0;
 
-  constructor(scene: Scene, publishHud: (state: HudState) => void, demo: boolean, demoMissionKey: MissionKey = "level-01") {
+  constructor(scene: Scene, publishHud: (state: HudState) => void, demo: boolean, demoMissionKey: MissionKey = "level-01", demoLoadout: LoadoutKey = "vanguard", private readonly demoSpecial = false) {
     this.scene = scene; this.publishHud = publishHud; this.demo = demo; this.stageGlow = this.buildStage();
     this.player = new Mecha(scene, { id: "player", startX: -3.55, direction: 1, textureUrl: BLUE_MECHA_URL, profile: LOADOUTS.vanguard });
     this.enemy = new Mecha(scene, { id: "enemy", startX: 3.55, direction: -1, textureUrl: RED_MECHA_URL, profile: this.mission.opponent });
@@ -60,7 +61,7 @@ export class GameWorld {
     this.impactFlash = MeshBuilder.CreateDisc("impact-flash", { radius: 0.55, tessellation: 8 }, scene); this.impactFlash.position.z = -0.55;
     const flashMaterial = new StandardMaterial("impact-flash-material", scene); flashMaterial.diffuseColor = Color3.FromHexString("#fff3cd"); flashMaterial.emissiveColor = Color3.FromHexString("#ffb436"); flashMaterial.alpha = 0.88; flashMaterial.disableLighting = true; this.impactFlash.material = flashMaterial; this.impactFlash.isVisible = false;
     this.demoStart = performance.now() / 1000;
-    if (demo) this.startMatch("vanguard", demoMissionKey, true); else this.emitHud(true);
+    if (demo) this.startMatch(demoLoadout, demoMissionKey, true); else this.emitHud(true);
   }
 
   setAction(action: InputAction, pressed: boolean) { this.input.set(action, pressed); }
@@ -93,6 +94,7 @@ export class GameWorld {
     const direction = (this.input.isDown("right") ? 1 : 0) - (this.input.isDown("left") ? 1 : 0);
     this.player.move(direction, delta, now); this.player.setGuard(this.input.isDown("guard"), now);
     if (this.input.isDown("boost") && now > this.lastBoostAt && this.player.boost(direction, now)) { this.lastBoostAt = now + 0.72; this.message = "VECTOR BOOST // ENGINE OUTPUT MAX"; this.audio.play("step"); }
+    if (this.input.isDown("special") && now > this.lastSpecialAt && this.player.startSpecial(now)) { const special = this.player.special; if (special && (special.kind === "lunge" || special.kind === "blink")) this.player.specialApproach(this.enemy.x, special.range); this.lastSpecialAt = now + (special?.cooldown ?? 2); this.message = `${this.player.label} // ${special?.name ?? "SPECIAL"}`; this.audio.play("strike"); }
     if (direction !== 0 && now > this.lastStepAt) { this.audio.play("step"); this.lastStepAt = now + 0.25; }
     if (this.input.isDown("guard") && now > this.lastGuardAt) { this.audio.play("guard"); this.lastGuardAt = now + 0.42; }
     if (this.input.isDown("strike") && this.player.startStrike(now)) this.audio.play("strike");
@@ -114,6 +116,7 @@ export class GameWorld {
 
   private runDemo(now: number, delta: number) {
     const phase = (now - this.demoStart) % 8; const cycle = Math.floor((now - this.demoStart) / 8);
+    if (this.demoSpecial && phase < 0.82) { if (phase > 0.06 && phase < 0.25 && this.player.startSpecial(now)) { const special = this.player.special; if (special && (special.kind === "lunge" || special.kind === "blink")) this.player.specialApproach(this.enemy.x, special.range); this.message = `DEMO SPECIAL // ${special?.name ?? "FRAME SPECIAL"}`; } return; }
     if (cycle !== this.demoCycle) { this.demoCycle = cycle; this.message = "DEMO LINK // SIMULTANEOUS COMBAT"; }
     if (phase < 1.25) { const shouldClose = Math.abs(this.enemy.x - this.player.x) > 2.2; this.player.move(shouldClose ? 1 : 0, delta, now); this.enemy.move(shouldClose ? -1 : 0, delta, now); }
     else if (phase < 1.85) { this.player.setGuard(true, now); this.enemy.startStrike(now); }
@@ -121,32 +124,35 @@ export class GameWorld {
     else if (phase < 3.15) { if (phase > 2.48 && phase < 2.65) { this.player.startStrike(now); this.enemy.startStrike(now); } }
     else if (phase < 4.1) { this.enemy.setGuard(true, now); if (phase > 3.28 && phase < 3.45) this.player.startStrike(now); }
     else if (phase < 5.2) { this.enemy.setGuard(false, now); if (phase > 4.22 && phase < 4.4) { this.player.startStrike(now); this.enemy.startStrike(now); } }
-    else if (phase < 6.1) { if (phase > 5.3 && phase < 5.47) this.enemy.startStrike(now); } else this.player.setGuard(true, now);
+    else if (phase < 6.1) { if (phase > 5.3 && phase < 5.47) this.enemy.startStrike(now); } else if (phase < 6.8) { if (phase > 6.15 && phase < 6.32 && this.player.startSpecial(now)) { const special = this.player.special; if (special && (special.kind === "lunge" || special.kind === "blink")) this.player.specialApproach(this.enemy.x, special.range); } } else this.player.setGuard(true, now);
   }
 
   private resolveImpacts(now: number) {
     const intents: ImpactIntent[] = [];
     if (this.player.needsImpact(now)) intents.push({ attacker: this.player, defender: this.enemy });
     if (this.enemy.needsImpact(now)) intents.push({ attacker: this.enemy, defender: this.player });
+    if (this.player.needsSpecialImpact(now) && this.player.special) intents.push({ attacker: this.player, defender: this.enemy, special: this.player.special });
     if (!intents.length) return;
-    const playerCleanIntent = intents.some(({ attacker, defender }) => attacker === this.player && Math.abs(attacker.x - defender.x) <= 2.48 && !defender.isGuarding);
-    const proposedCombo = playerCleanIntent ? (now <= this.comboUntil ? this.combo + 1 : 1) : 0;
+    const playerCleanIntent = intents.some(({ attacker, defender, special }) => attacker === this.player && Math.abs(attacker.x - defender.x) <= (special?.range ?? 2.48) && !defender.isGuarding);
+    const playerSpecialIntent = intents.some(({ attacker, special }) => attacker === this.player && Boolean(special));
+    const proposedCombo = playerCleanIntent ? (now <= this.comboUntil ? this.combo + (playerSpecialIntent ? 2 : 1) : playerSpecialIntent ? 2 : 1) : 0;
     const overdriveStrike = proposedCombo >= 3;
-    const outcomes: ImpactResult[] = intents.map(({ attacker, defender }) => {
-      const inRange = Math.abs(attacker.x - defender.x) <= 2.48;
+    const outcomes: ImpactResult[] = intents.map(({ attacker, defender, special }) => {
+      const inRange = Math.abs(attacker.x - defender.x) <= (special?.range ?? 2.48);
       const guarded = defender.isGuarding;
-      const damage = Math.ceil(attacker.strikeDamage * (attacker === this.player && overdriveStrike ? 1.42 : 1));
-      return { attacker, defender, inRange, guarded, damage };
+      const damage = Math.ceil(attacker.strikeDamage * (special?.damageMultiplier ?? 1) * (attacker === this.player && overdriveStrike ? 1.42 : 1));
+      return { attacker, defender, inRange, guarded, damage, special };
     });
     outcomes.forEach((outcome) => { if (outcome.inRange) { const resolved = outcome.defender.receiveDamage(outcome.damage, now); outcome.guarded = resolved.guarded; outcome.damage = resolved.damage; } });
     const cleanHits = outcomes.filter((outcome) => outcome.inRange);
     if (playerCleanIntent) { this.combo = proposedCombo; this.comboUntil = now + 1.55; if (overdriveStrike) this.overdriveUntil = now + 1.15; } else if (intents.some(({ attacker }) => attacker === this.player)) this.combo = 0;
     if (cleanHits.length) {
       const midpoint = cleanHits.reduce((total, outcome) => total + (outcome.attacker.x + outcome.defender.x) / 2, 0) / cleanHits.length;
-      this.impactFlash.position = new Vector3(midpoint, -0.5, -0.6); this.impactFlash.scaling.setAll(cleanHits.some((outcome) => outcome.guarded) ? 0.86 : 1.22); this.impactFlash.isVisible = true; this.impactFlashUntil = now + 0.2;
-      this.impactKickUntil = now + (cleanHits.some((outcome) => outcome.guarded) ? 0.075 : 0.12); this.impactKickDirection = cleanHits[0].attacker === this.player ? -1 : 1;
+      const specialHit = cleanHits.find((outcome) => outcome.special);
+      this.impactFlash.position = new Vector3(midpoint, -0.5, -0.6); this.impactFlash.scaling.setAll(cleanHits.some((outcome) => outcome.guarded) ? 0.86 : specialHit ? 1.82 : 1.22); this.impactFlash.isVisible = true; this.impactFlashUntil = now + (specialHit ? 0.32 : 0.2);
+      this.impactKickUntil = now + (cleanHits.some((outcome) => outcome.guarded) ? 0.075 : specialHit ? 0.18 : 0.12); this.impactKickDirection = cleanHits[0].attacker === this.player ? -1 : 1;
       this.audio.play(cleanHits.some((outcome) => outcome.guarded) ? "guard" : "impact");
-      this.message = overdriveStrike ? `OVERDRIVE COMBO // ${proposedCombo}X · ${cleanHits.find((outcome) => outcome.attacker === this.player)?.damage ?? 0} DAMAGE` : cleanHits.length === 2 ? "SYNC IMPACT // BOTH FRAMES CONNECT" : cleanHits[0].guarded ? `${cleanHits[0].defender.label} // PRISM GUARD HOLDS` : `${cleanHits[0].attacker.label} // CLEAN HIT · ${cleanHits[0].damage} DAMAGE`;
+      this.message = specialHit ? `${specialHit.attacker.label} // ${specialHit.special?.name ?? "SPECIAL"} · ${specialHit.damage} DAMAGE` : overdriveStrike ? `OVERDRIVE COMBO // ${proposedCombo}X · ${cleanHits.find((outcome) => outcome.attacker === this.player)?.damage ?? 0} DAMAGE` : cleanHits.length === 2 ? "SYNC IMPACT // BOTH FRAMES CONNECT" : cleanHits[0].guarded ? `${cleanHits[0].defender.label} // PRISM GUARD HOLDS` : `${cleanHits[0].attacker.label} // CLEAN HIT · ${cleanHits[0].damage} DAMAGE`;
     } else this.message = `${intents[0].attacker.label} // STRIKE MISSED`;
     if (this.player.isDown && this.enemy.isDown) this.finishRound("draw", now); else if (this.enemy.isDown) this.finishRound("player", now); else if (this.player.isDown) this.finishRound("enemy", now);
     this.emitHud(true);

@@ -5,7 +5,7 @@ import { FreeCamera } from "@babylonjs/core/Cameras/freeCamera";
 import { Engine } from "@babylonjs/core/Engines/engine";
 import { Scene } from "@babylonjs/core/scene";
 import { GameWorld } from "./GameWorld";
-import { MISSIONS, type GameHandle, type HudState, type MissionKey } from "./types";
+import { LOADOUTS, MISSIONS, type GameHandle, type HudState, type LoadoutKey, type MissionKey } from "./types";
 
 export async function createGameScene(engine: Engine, canvas: HTMLCanvasElement, publishHud: (state: HudState) => void): Promise<GameHandle> {
   const scene = new Scene(engine);
@@ -22,7 +22,9 @@ export async function createGameScene(engine: Engine, canvas: HTMLCanvasElement,
   const demo = params.has("demo");
   const requestedMission = params.get("mission") ?? "level-01";
   const demoMissionKey: MissionKey = MISSIONS[requestedMission] ? requestedMission : "level-01";
-  const world = new GameWorld(scene, publishHud, demo, demoMissionKey);
+  const requestedLoadout = params.get("loadout") ?? "vanguard";
+  const demoLoadout: LoadoutKey = LOADOUTS[requestedLoadout as LoadoutKey] ? requestedLoadout as LoadoutKey : "vanguard";
+  const world = new GameWorld(scene, publishHud, demo, demoMissionKey, demoLoadout, params.has("special"));
   return {
     scene,
     update: (delta) => world.update(delta),
