@@ -32,3 +32,7 @@
 - [x] Define visual cooldown telemetry, a three-step route for each chassis, and readable counterplay rules for every special type.
 - [x] Implement live cooldown gauges, chassis route progression and finishers, plus commander recognition and counter responses.
 - [x] Validate cooldown clarity, route rewards, counter behavior, desktop/mobile controls, logs, and production build output.
+- [x] Audit the current Command Deck home composition, reusable campaign data, and frame imagery.
+- [x] Define a distinctive command-bay composition centered on deployment, selected frame identity, and campaign progress.
+- [x] Implement the redesigned home page with richer operation cards, frame-led art direction, and direct navigation into key player flows.
+- [x] Validate the Command Deck at desktop and mobile widths, refine visual hierarchy, and run production checks.
