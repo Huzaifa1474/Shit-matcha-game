@@ -19,3 +19,8 @@
 - [x] Define responsive acceleration, deceleration, body lean, arm articulation, weapon follow-through, and guard behavior.
 - [x] Implement improved locomotion, attack anticipation/recovery, hand and weapon poses, recoil, hit-stop, and impact feedback.
 - [x] Validate combat controls, visual readability, desktop/mobile input response, browser logs, and production build output.
+- [x] Audit and redesign the Command Deck theme, information hierarchy, iconography, and active-operation preview.
+- [x] Author location metadata so all 20 levels receive a distinct combat location, visual palette, and surface identity.
+- [x] Implement grounded fighter contact, location-sensitive stage treatment, dynamic engine effects, and improved environmental motion.
+- [x] Add combo tracking, advanced strike chains, on-screen combo telemetry, and high-intensity combat feedback.
+- [x] Verify location changes across all stages, new controls, home presentation, desktop/mobile combat readability, logs, and production build output.

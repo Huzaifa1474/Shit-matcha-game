@@ -8,6 +8,9 @@ const ACTION_BY_KEY: Record<string, InputAction | "reset"> = {
   KeyJ: "strike",
   Space: "strike",
   KeyK: "guard",
+  KeyL: "boost",
+  ShiftLeft: "boost",
+  ShiftRight: "boost",
   KeyR: "reset",
 };
 
@@ -45,4 +48,3 @@ export class InputManager {
     this.pressed.clear();
   }
 }
-
