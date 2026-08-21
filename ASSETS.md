@@ -31,3 +31,18 @@
 | Guard field | Babylon line/plane material | 2.2 scene units | Angular blue or red guard state signal. |
 | Exhaust smoke | Babylon transparent planes | 0.3–0.8 scene units | Low-frequency background activity. |
 
+## Audio
+
+| Asset | Method | Length | Purpose |
+|---|---|---:|---|
+| Rustbelt Arena 8-bit Loop | Generated instrumental chiptune | 90 seconds | Looping arena background music; starts after the pilot’s first launch gesture. `/manus-storage/rustbelt-arena-8bit-loop_907a823b.mp3` |
+| Combat chip sounds | Web Audio oscillator phrases | 40–300 ms | Immediate movement relay, strike, impact, guard, and match-result feedback with no network latency. |
+
+## Frame-Stepped Animation
+
+| State | Method | Frames | Visual role |
+|---|---|---:|---|
+| Idle | Procedural pose clock | 2 | Cockpit flicker and chassis settle. |
+| Move | Procedural pose clock | 4 | Alternating leg/arm step and body lift. |
+| Strike | Procedural pose clock | 4 | Anticipation, extension, impact, recovery. |
+| Guard | Procedural pose clock | 3 | Braced chassis with angular shield aperture. |

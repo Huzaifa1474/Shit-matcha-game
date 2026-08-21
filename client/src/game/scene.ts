@@ -9,7 +9,7 @@ import type { GameHandle, HudState } from "./types";
 
 export async function createGameScene(engine: Engine, canvas: HTMLCanvasElement, publishHud: (state: HudState) => void): Promise<GameHandle> {
   const scene = new Scene(engine);
-  scene.clearColor = Color4.FromHexString("#101515");
+  scene.clearColor = Color4.FromHexString("#5c4e3a");
   const camera = new FreeCamera("arena-camera", new Vector3(0, 0, -10), scene);
   camera.mode = Camera.ORTHOGRAPHIC_CAMERA;
   camera.orthoLeft = -8;
@@ -20,12 +20,13 @@ export async function createGameScene(engine: Engine, canvas: HTMLCanvasElement,
   camera.detachControl();
   const demo = new URLSearchParams(window.location.search).has("demo");
   const world = new GameWorld(scene, publishHud, demo);
-  scene.onBeforeRenderObservable.add(() => world.update(scene.getEngine().getDeltaTime() / 1000));
   return {
     scene,
+    update: (delta) => world.update(delta),
     setAction: (action, pressed) => world.setAction(action, pressed),
-    reset: () => world.reset(),
+    startMatch: (loadout) => world.startMatch(loadout),
+    returnToSelect: () => world.returnToSelect(),
+    toggleAudio: () => world.toggleAudio(),
     dispose: () => { world.dispose(); scene.dispose(); },
   };
 }
-

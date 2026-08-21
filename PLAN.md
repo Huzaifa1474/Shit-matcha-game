@@ -4,6 +4,8 @@
 
 Pixel Mecha Battle is a single-screen 2D duel. The player pilots **Blue Vanguard** against the autonomous **Red Raider**. Both units begin with 100 HP. Win by reducing the opposing mech to zero HP; lose if Blue Vanguard reaches zero first.
 
+The enhanced **Tournament Link** mode begins in Hangar Select and runs as a best-of-three encounter. The player selects Blue Vanguard, Ironclad, or Sparkrunner before launch; the selected frame supplies a specific integrity, speed, strike, and guard profile. Every round re-arms both fighters at full integrity, while the first combatant to two round markers wins the match.
+
 | System | Player | Opponent | Rule |
 |---|---|---|---|
 | Movement | `A` / `D` or arrow keys | Intent-driven arena movement | Both fighters stay inside the catwalk bounds. |
@@ -28,6 +30,8 @@ Pixel Mecha Battle is a single-screen 2D duel. The player pilots **Blue Vanguard
 
 Build a full-viewport Babylon.js orthographic stage with a generated Rustbelt Arena backdrop and two generated mecha plane sprites. Add a React-based HUD around the canvas for energy rails, round information, controls, an event ticker, an action guide, a touch-friendly control cluster, and win/loss handling. Use a deterministic `?demo` autopilot that visibly exercises movement, guard, attack, damage, and reset states for visual review.
 
+The shipped presentation also uses a resilient CSS pixel stage beneath the HUD. It supplies a clear warm industrial hangar, animated procedural mecha silhouettes, and four-frame action-state poses in the preview environment while the underlying Babylon world retains combat ownership and frame-state simulation.
+
 - **Assets:**
   - Rustbelt Arena generated backdrop, filling the arena’s rear layer.
   - Blue Vanguard and Red Raider generated cutout mecha artwork for the fighters.
@@ -42,4 +46,3 @@ Build a full-viewport Babylon.js orthographic stage with a generated Rustbelt Ar
   - `?demo` visibly produces an active battle without manual input.
   - No missing textures, off-screen HUD overlap, runtime errors, or placeholder-looking main visual elements.
   - The final stage matches the target’s side-on camera, warm industrial palette, fighter scale, and visual density.
-

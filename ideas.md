@@ -71,5 +71,7 @@ Example lines:
 - Every battle view keeps a visibly lit rustbelt stage behind the combatants; a black void is never an acceptable arena state.
 - The two mecha silhouettes remain the first center-line read, ahead of decorative detail and UI ornament.
 - Reactor Teal (#19C7B5) remains restricted to the reactor glyph and powered-machine indicators, leaving blue/red to the fighters and acid yellow to hazard markings.
+- Non-combat Hangar Select views must preserve a dusty rustbelt environment, physical cabinet frames, hazard-seam geometry, and visible frame silhouettes rather than resembling a black terminal.
+- The PIXEL // MECHA lockup always pairs its name with a dominant teal reactor glyph; this remains the primary brand signal across the menu and match HUD.
 
 The wordmark is a condensed, stenciled **PIXEL // MECHA** lockup interrupted by a central reactor glyph. The graphic mark is a heavy angular teal reactor core: a hexagonal chassis around a four-pronged electric aperture. It is always shown independently of text when space is limited.
