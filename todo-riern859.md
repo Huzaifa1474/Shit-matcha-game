@@ -41,3 +41,6 @@
 - [x] Implement purchasable and reward-earned frame ownership, collection filtering, locked-state clarity, and loadout selection.
 - [x] Author three unique stage bosses with distinctive names, silhouettes, attack behaviors, and boss-intro copy.
 - [x] Validate roster ownership, purchase and reward loops, boss presentation, desktop/mobile collection usability, and production build output.
+- [x] Identify the panel rule that clips the Level Board cards below the stage header.
+- [x] Repair the mission-grid sizing and overflow behavior without weakening the cabinet presentation.
+- [x] Verify all stage cards remain visible and reachable at desktop and mobile breakpoints, then run the production build.
