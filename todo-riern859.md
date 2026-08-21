@@ -15,3 +15,7 @@
 - [x] Implement a skippable post-victory epilogue cinematic that triggers only after completing Level 20.
 - [x] Persist campaign completion and reflect it through an end-state seal and refreshed Command Deck messaging.
 - [x] Validate the epilogue trigger, acknowledgement action, desktop and mobile layout, and production build output.
+- [x] Audit the current movement, strike, guard, hit, and frame-art motion hooks.
+- [x] Define responsive acceleration, deceleration, body lean, arm articulation, weapon follow-through, and guard behavior.
+- [x] Implement improved locomotion, attack anticipation/recovery, hand and weapon poses, recoil, hit-stop, and impact feedback.
+- [x] Validate combat controls, visual readability, desktop/mobile input response, browser logs, and production build output.

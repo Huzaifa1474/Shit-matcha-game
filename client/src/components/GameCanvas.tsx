@@ -106,6 +106,7 @@ function CustomMecha({ side, action, position, artUrl, chassis }: { side: "playe
     <span className="custom-engine engine-top" />
     <span className="custom-engine engine-bottom" />
     <img className="custom-mecha-art" src={artUrl} alt="" />
+    <span className="motion-rig"><span className="articulated-arm arm-back"><i /><b /></span><span className="articulated-arm arm-front"><i /><b /></span><span className="motion-weapon" /><span className="motion-impact" /></span>
     {action === "guard" && <img className="prism-shield-art" src={PRISM_SHIELD_ART} alt="" />}
   </div>;
 }

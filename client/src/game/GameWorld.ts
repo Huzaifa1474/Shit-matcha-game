@@ -41,6 +41,8 @@ export class GameWorld {
   private demoStart = 0;
   private impactFlash: AbstractMesh;
   private impactFlashUntil = 0;
+  private impactKickUntil = 0;
+  private impactKickDirection = 1;
   private smoke: AbstractMesh[] = [];
   private stageGlow: StandardMaterial;
 
@@ -130,6 +132,7 @@ export class GameWorld {
     if (cleanHits.length) {
       const midpoint = cleanHits.reduce((total, outcome) => total + (outcome.attacker.x + outcome.defender.x) / 2, 0) / cleanHits.length;
       this.impactFlash.position = new Vector3(midpoint, -0.5, -0.6); this.impactFlash.scaling.setAll(cleanHits.some((outcome) => outcome.guarded) ? 0.86 : 1.22); this.impactFlash.isVisible = true; this.impactFlashUntil = now + 0.2;
+      this.impactKickUntil = now + (cleanHits.some((outcome) => outcome.guarded) ? 0.075 : 0.12); this.impactKickDirection = cleanHits[0].attacker === this.player ? -1 : 1;
       this.audio.play(cleanHits.some((outcome) => outcome.guarded) ? "guard" : "impact");
       this.message = cleanHits.length === 2 ? "SYNC IMPACT // BOTH FRAMES CONNECT" : cleanHits[0].guarded ? `${cleanHits[0].defender.label} // PRISM GUARD HOLDS` : `${cleanHits[0].attacker.label} // CLEAN HIT · ${cleanHits[0].damage} DAMAGE`;
     } else this.message = `${intents[0].attacker.label} // STRIKE MISSED`;
@@ -144,7 +147,7 @@ export class GameWorld {
     else { this.matchState = "round-result"; this.nextRoundAt = now + 1.55; this.message = winner === "draw" ? "SYNC BREACH // RE-ARMING BOTH FRAMES" : winner === "player" ? "ROUND SECURED // RE-ARMING" : "ROUND LOST // RE-ARMING"; this.audio.play("round"); }
   }
 
-  private updateSceneMotion(now: number) { this.impactFlash.isVisible = now < this.impactFlashUntil; for (let index = 0; index < this.smoke.length; index += 1) { const puff = this.smoke[index]; puff.position.y += 0.0025 + index * 0.0006; puff.position.x += Math.sin(now + index) * 0.0014; if (puff.position.y > 3.9) puff.position.y = 1.9; } }
+  private updateSceneMotion(now: number) { this.impactFlash.isVisible = now < this.impactFlashUntil; if (this.impactFlash.isVisible) { const pulse = Math.max(0, (this.impactFlashUntil - now) / 0.2); this.impactFlash.scaling.y = 0.78 + (1 - pulse) * 0.78; this.impactFlash.rotation.z += 0.22; } const camera = this.scene.activeCamera; if (camera) { if (now < this.impactKickUntil) { const intensity = (this.impactKickUntil - now) / 0.12; camera.position.x = Math.sin(now * 185) * 0.06 * intensity * this.impactKickDirection; camera.position.y = Math.cos(now * 151) * 0.035 * intensity; } else { camera.position.x = 0; camera.position.y = 0; } } for (let index = 0; index < this.smoke.length; index += 1) { const puff = this.smoke[index]; puff.position.y += 0.0025 + index * 0.0006; puff.position.x += Math.sin(now + index) * 0.0014; if (puff.position.y > 3.9) puff.position.y = 1.9; } }
 
   private emitHud(force = false) {
     const now = performance.now() / 1000; if (!force && now - this.lastHudPublish < 0.08) return; this.lastHudPublish = now;
