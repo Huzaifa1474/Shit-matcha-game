@@ -44,3 +44,8 @@
 - [x] Identify the panel rule that clips the Level Board cards below the stage header.
 - [x] Repair the mission-grid sizing and overflow behavior without weakening the cabinet presentation.
 - [x] Verify all stage cards remain visible and reachable at desktop and mobile breakpoints, then run the production build.
+- [x] Audit the current input flow, combo tracking, fighter animation states, Armory rendering, and authored-frame asset manifest.
+- [x] Define directional move lists for all playable chassis, with launcher entries, juggle follow-up windows, and exclusive finishers.
+- [x] Implement directional input buffering, launch and airborne-juggle states, damage scaling, hit-stop feedback, and live combo telemetry.
+- [x] Replace Armory schematic figures with existing authored art for the five supported frames and retain labeled fallback records for frames without artwork.
+- [x] Validate directional combo execution and Armory art display across desktop/mobile views, then run checks and save a checkpoint.

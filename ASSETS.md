@@ -24,6 +24,11 @@
 | Red Raider | Vermilion/graphite enemy mecha, facing left | 150×150 px display target | `/manus-storage/red-raider-mecha_87c0fcb9.png` |
 | Reactor Core Mark | Teal angular arcade reactor emblem used in the HUD header | 64×64 px display target | `/manus-storage/reactor-core-mark_76dd0b87.png` |
 | Reward Cache Emblems | Open cache with three achievement emblems for progression panels | 256×256 px display target | `/manus-storage/reward-cache-emblems_828578b5.png` |
+| Aegis Rift | Authored cobalt rail-saber frame portrait | Armory / hangar / battle display | `/manus-storage/aegis-rift-custom-frame_bb4c57ca.png` |
+| Ironclad Bastion | Authored heavy breach-frame portrait derived from the existing five-frame maintenance artwork | Armory / hangar / battle display | `/manus-storage/ironclad-bastion-portrait_0e6c5e5c.png` |
+| Sparkrunner Arc | Authored teal vector-frame portrait derived from the existing five-frame maintenance artwork | Armory / hangar / battle display | `/manus-storage/sparkrunner-arc-portrait_21fe9037.png` |
+| Bulwark-9 | Authored yellow siege-frame portrait derived from the existing five-frame maintenance artwork | Armory / hangar / battle display | `/manus-storage/bulwark-9-portrait_b902a395.png` |
+| Pulsewing Nova | Authored crimson wing-frame portrait derived from the existing five-frame maintenance artwork | Armory / hangar / battle display | `/manus-storage/pulsewing-nova-portrait_d20e5790.png` |
 
 ## Procedural Effects and UI
 

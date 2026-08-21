@@ -17,6 +17,7 @@ const ACTION_BY_KEY: Record<string, InputAction | "reset"> = {
 
 export class InputManager {
   private pressed = new Set<InputAction>();
+  private queued = new Set<InputAction>();
   private readonly onReset: () => void;
   private readonly onKeyDown: (event: KeyboardEvent) => void;
   private readonly onKeyUp: (event: KeyboardEvent) => void;
@@ -31,6 +32,7 @@ export class InputManager {
         if (!event.repeat) this.onReset();
         return;
       }
+      if (!this.pressed.has(action)) this.queued.add(action);
       this.pressed.add(action);
     };
     this.onKeyUp = (event) => {
@@ -42,10 +44,12 @@ export class InputManager {
   }
 
   isDown(action: InputAction) { return this.pressed.has(action); }
-  set(action: InputAction, pressed: boolean) { pressed ? this.pressed.add(action) : this.pressed.delete(action); }
+  consume(action: InputAction) { if (!this.queued.has(action)) return false; this.queued.delete(action); return true; }
+  set(action: InputAction, pressed: boolean) { if (pressed && !this.pressed.has(action)) this.queued.add(action); pressed ? this.pressed.add(action) : this.pressed.delete(action); }
   dispose() {
     window.removeEventListener("keydown", this.onKeyDown);
     window.removeEventListener("keyup", this.onKeyUp);
     this.pressed.clear();
+    this.queued.clear();
   }
 }

@@ -73,5 +73,8 @@ Example lines:
 - Reactor Teal (#19C7B5) remains restricted to the reactor glyph and powered-machine indicators, leaving blue/red to the fighters and acid yellow to hazard markings.
 - Non-combat Hangar Select views must preserve a dusty rustbelt environment, physical cabinet frames, hazard-seam geometry, and visible frame silhouettes rather than resembling a black terminal.
 - The PIXEL // MECHA lockup always pairs its name with a dominant teal reactor glyph; this remains the primary brand signal across the menu and match HUD.
+- Armory records should read as physical maintenance bays with large framed portraits, visible service-grid hardware, and warm plated materials instead of dense dark database cards.
+- Directional combo telemetry may cross the arena frame only while it communicates an active launcher, juggle, or finisher, and must not obscure either fighter’s silhouette or the strike lane.
+- Catalog language remains concise and operational: state the frame, system, command, or acquisition condition without conventional product copy.
 
 The wordmark is a condensed, stenciled **PIXEL // MECHA** lockup interrupted by a central reactor glyph. The graphic mark is a heavy angular teal reactor core: a hexagonal chassis around a four-pronged electric aperture. It is always shown independently of text when space is limited.

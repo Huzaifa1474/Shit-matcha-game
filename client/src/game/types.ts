@@ -1,7 +1,7 @@
 import type { Scene } from "@babylonjs/core/scene";
 
 export type InputAction = "left" | "right" | "strike" | "guard" | "boost" | "special";
-export type MechaAction = "idle" | "move" | "strike" | "special" | "guard" | "damaged" | "down";
+export type MechaAction = "idle" | "move" | "strike" | "special" | "guard" | "damaged" | "airborne" | "down";
 export type MatchState = "select" | "active" | "round-result" | "match-victory" | "match-defeat";
 export type LoadoutKey = string;
 export type MissionKey = string;
@@ -15,6 +15,10 @@ export type UnlockKind = "starter" | "salvage" | "reward";
 export interface SpecialDefinition { key: string; name: string; tactical: string; kind: SpecialKind; damageMultiplier: number; range: number; cooldown: number; }
 export type ComboInput = "strike" | "special";
 export interface ComboRoute { label: string; sequence: ComboInput[]; finisher: string; tactical: string; window: number; finisherMultiplier: number; }
+export type ComboDirection = "neutral" | "forward" | "back";
+export type ComboMoveKind = "pressure" | "launcher" | "juggle" | "finisher";
+export interface DirectionalMove { command: string; name: string; kind: ComboMoveKind; input: ComboInput; direction: ComboDirection; tactical: string; damageMultiplier: number; }
+export interface ComboTree { label: string; string: string; launcher: DirectionalMove; followUp: DirectionalMove; finisher: DirectionalMove; backstep: DirectionalMove; juggleWindow: number; launchHeight: number; }
 export interface FrameUnlock { kind: UnlockKind; cost?: number; level?: number; }
 export interface MechaProfile { key: LoadoutKey; label: string; callsign: string; maxHp: number; speed: number; strikeDamage: number; guardMultiplier: number; frameScale: number; accent: string; flare: string; description: string; chassis: ChassisKind; special?: SpecialDefinition; unlock?: FrameUnlock; collection?: string; }
 export interface AiTuning { aggression: number; attackInterval: number; guardChance: number; pursuitRange: number; }
@@ -56,6 +60,32 @@ export const COMBO_ROUTES: Record<LoadoutKey, ComboRoute> = {
   railbornoracle: r("ORACLE LOOP", ["strike", "special", "strike"], "SIGNAL VERDICT", "Data-lance read converts into a far finisher.", 1.42, 1.34), hushvector: r("VOID THREAD", ["special", "strike", "strike"], "HUSH RIPOSTE", "Disappear through pressure and return on the blind side.", 1.17, 1.31), starlingsiege: r("COMET LOCK", ["strike", "strike", "special"], "STARHAMMER FALL", "Absorb the lane then collapse it with the hammer.", 1.71, 1.43), relicsun: r("HALO CIRCUIT", ["strike", "special", "strike"], "RELIC DAWN", "Halo charge turns a saber flow into light.", 1.46, 1.36), sunforgeprime: r("DAWN PROTOCOL", ["special", "strike", "strike"], "SOLAR HORIZON", "A relay volley ignites a final champion route.", 1.38, 1.4),
 };
 
+const move = (command: string, name: string, kind: ComboMoveKind, input: ComboInput, direction: ComboDirection, tactical: string, damageMultiplier: number): DirectionalMove => ({ command, name, kind, input, direction, tactical, damageMultiplier });
+const tree = (label: string, launcherName: string, followUpName: string, finisherName: string, backstepName: string, juggleWindow: number, launchHeight: number): ComboTree => ({ label, string: "F+J → J → F+Q", launcher: move("F+J", launcherName, "launcher", "strike", "forward", "Forward strike opens an aerial follow-up lane.", 1.1), followUp: move("J", followUpName, "juggle", "strike", "neutral", "Neutral strike catches the airborne target before landing.", 0.9), finisher: move("F+Q", finisherName, "finisher", "special", "forward", "Forward special cashes out the juggle for high damage.", 1.42), backstep: move("B+J", backstepName, "pressure", "strike", "back", "Back input creates a guarded spacing check.", 0.86), juggleWindow, launchHeight });
+
+export const COMBO_TREES: Record<ChassisKind, ComboTree> = {
+  balanced: tree("RAIL TRIAD", "RAIL LIFTER", "CROSSLINK CUT", "PRISM ASCENSION", "COUNTER SHEAR", 1.28, 1.02),
+  heavy: tree("BREACH COLUMN", "BULKHEAD UPPER", "RIVET BREAK", "BASTION SKYCRASH", "ANCHOR CHECK", 1.16, 0.92),
+  scout: tree("ARC CASCADE", "ION KICKOVER", "RELAY SLICE", "ARC AFTERIMAGE", "STATIC FEINT", 1.36, 1.14),
+  bulwark: tree("SIEGE CYCLE", "SIEGE UPLINK", "CITADEL SWAT", "CITADEL COLLAPSE", "WALLBRACE", 1.04, 0.84),
+  winged: tree("NOVA WEAVE", "SKYLINE LIFT", "FEATHER CUT", "NOVA TERMINUS", "WINGBRAKE", 1.32, 1.1),
+  raider: tree("HOOKLINE RUPTURE", "HOOKLINE LIFT", "TETHER RIP", "REDLINE DESCENT", "REELBACK", 1.22, 1),
+  brute: tree("PISTON BEAT", "PISTON UPRUSH", "FORGE KNUCKLE", "FURNACE FALL", "MACE CHECK", 1.08, 0.88),
+  warden: tree("LOCKDOWN ARRAY", "BARRIER BREAK", "SIGNAL TAP", "LOCKDOWN VERDICT", "GUARD RAIL", 1.2, 0.96),
+  phantom: tree("VOID THREAD", "PHASE LIFTER", "SILENT RIP", "BLACKOUT TERMINUS", "GHOST STEP", 1.38, 1.16),
+  crown: tree("CROWN PROTOCOL", "CROWN ELEVATOR", "SIGIL BREAK", "DAWN HORIZON", "PROTOCOL CHECK", 1.24, 1.04),
+};
+
+export const getComboTree = (loadout: LoadoutKey) => COMBO_TREES[LOADOUTS[loadout].chassis];
+
+export const AUTHORED_FRAME_ART: Partial<Record<LoadoutKey, string>> = {
+  vanguard: "/manus-storage/aegis-rift-custom-frame_bb4c57ca.png",
+  ironclad: "/manus-storage/ironclad-bastion-portrait_0e6c5e5c.png",
+  sparkrunner: "/manus-storage/sparkrunner-arc-portrait_21fe9037.png",
+  bulwark: "/manus-storage/bulwark-9-portrait_b902a395.png",
+  pulsewing: "/manus-storage/pulsewing-nova-portrait_d20e5790.png",
+};
+
 const STAGE_BACKGROUNDS: Record<TheatreClass, string> = { frontier: "/manus-storage/stage-one-scrapyard-dawn_c2c9282f.png", foundry: "/manus-storage/stage-two-cinder-foundry_0ec1dcff.png", vault: "/manus-storage/stage-three-night-vault_f0020e9b.png" };
 
 const STAGE_META: Record<CampaignStage, { label: string; theatre: string; theatreClass: TheatreClass; enemy: MechaProfile; enemyArtUrl: string; boss: BossDefinition; titles: string[]; objectives: string[]; locations: LocationDefinition[] }> = {
@@ -77,5 +107,5 @@ const makeLevel = (level: number): MissionDefinition => {
 export const CAMPAIGN_LEVELS = Array.from({ length: 20 }, (_, index) => makeLevel(index + 1));
 export const MISSIONS: Record<MissionKey, MissionDefinition> = Object.fromEntries(CAMPAIGN_LEVELS.map((mission) => [mission.key, mission]));
 
-export interface HudState { playerHp: number; playerMaxHp: number; enemyHp: number; enemyMaxHp: number; playerState: MechaAction; enemyState: MechaAction; playerX: number; enemyX: number; matchState: MatchState; round: number; playerRounds: number; enemyRounds: number; playerLabel: string; playerCallsign: string; enemyLabel: string; enemyCallsign: string; selectedLoadout: LoadoutKey; missionKey: MissionKey; missionTitle: string; missionObjective: string; missionReward: number; missionLevel: number; stage: CampaignStage; stageLabel: string; theatreClass: TheatreClass; locationKey: string; locationLabel: string; locationCallout: string; surface: SurfaceKind; locationAccent: string; atmosphere: string; backgroundUrl: string; enemyArtUrl: string; soundOn: boolean; combo: number; overdrive: boolean; specialCooldown: number; specialReady: boolean; routeLabel: string; routeStep: number; routeLength: number; routeNextInput: ComboInput; routeFinisherArmed: boolean; counterStatus: string; message: string; }
+export interface HudState { playerHp: number; playerMaxHp: number; enemyHp: number; enemyMaxHp: number; playerState: MechaAction; enemyState: MechaAction; playerX: number; enemyX: number; matchState: MatchState; round: number; playerRounds: number; enemyRounds: number; playerLabel: string; playerCallsign: string; enemyLabel: string; enemyCallsign: string; selectedLoadout: LoadoutKey; missionKey: MissionKey; missionTitle: string; missionObjective: string; missionReward: number; missionLevel: number; stage: CampaignStage; stageLabel: string; theatreClass: TheatreClass; locationKey: string; locationLabel: string; locationCallout: string; surface: SurfaceKind; locationAccent: string; atmosphere: string; backgroundUrl: string; enemyArtUrl: string; soundOn: boolean; combo: number; comboDamage: number; comboString: string; activeMoveName: string; juggleActive: boolean; juggleHeight: number; followUpHint: string; overdrive: boolean; specialCooldown: number; specialReady: boolean; routeLabel: string; routeStep: number; routeLength: number; routeNextInput: ComboInput; routeFinisherArmed: boolean; counterStatus: string; message: string; }
 export interface GameHandle { scene: Scene; update: (delta: number) => void; setAction: (action: InputAction, pressed: boolean) => void; startMatch: (loadout: LoadoutKey, mission: MissionKey) => void; returnToSelect: () => void; toggleAudio: () => boolean; dispose: () => void; }
