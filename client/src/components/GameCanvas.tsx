@@ -21,7 +21,7 @@ const AEGIS_ART = "/manus-storage/aegis-rift-custom-frame_bb4c57ca.png";
 const PRISM_SHIELD_ART = "/manus-storage/prismatic-aegis-shield_5ac4d617.png";
 
 type ConsoleView = "command" | "missions" | "roster" | "rewards" | "achievements" | "settings" | "hangar" | "battle";
-type CampaignProgress = { credits: number; completed: MissionKey[]; medals: MissionKey[]; achievements: string[]; battlesWon: number };
+type CampaignProgress = { credits: number; completed: MissionKey[]; medals: MissionKey[]; achievements: string[]; battlesWon: number; campaignComplete: boolean };
 type CabinetSettings = { reducedFx: boolean; scanlines: boolean; contrast: boolean };
 type BossIntroData = { missionKey: MissionKey; threat: string; title: string; designation: string; directive: string; transmission: string; artUrl: string; accent: string };
 
@@ -58,7 +58,7 @@ const INITIAL_HUD: HudState = {
   message: "COMMAND LINK // SELECT A LEVEL",
 };
 
-const DEFAULT_PROGRESS: CampaignProgress = { credits: 480, completed: [], medals: [], achievements: [], battlesWon: 0 };
+const DEFAULT_PROGRESS: CampaignProgress = { credits: 480, completed: [], medals: [], achievements: [], battlesWon: 0, campaignComplete: false };
 const DEFAULT_SETTINGS: CabinetSettings = { reducedFx: false, scanlines: true, contrast: false };
 const ACHIEVEMENTS = [
   { id: "first-link", title: "FIRST LINK", copy: "Secure Level 01.", icon: "◇" },
@@ -136,12 +136,25 @@ function initialBossIntro() {
   return requested ? BOSS_INTROS[requested] ?? null : null;
 }
 
+function initialEpilogue() {
+  return new URLSearchParams(window.location.search).has("epilogue");
+}
+
 function BossIntro({ intro, onEngage, onSkip }: { intro: BossIntroData; onEngage: () => void; onSkip: () => void }) {
   return <section className={`boss-intro-overlay accent-${intro.accent}`} role="dialog" aria-modal="true" aria-label={`${intro.title} boss introduction`}>
     <div className="boss-intro-noise" /><div className="boss-intro-scanline" />
     <div className="boss-intro-header"><span>HOSTILE SIGNATURE DETECTED</span><span>THREAT // MAXIMUM</span></div>
     <div className="boss-intro-frame"><div className="boss-intro-portrait"><span className="boss-reticle" /><img src={intro.artUrl} alt={`${intro.title} enemy combat frame`} /></div><div className="boss-intro-copy"><span className="boss-kicker">{intro.threat}</span><h2>{intro.title}</h2><p className="boss-designation">{intro.designation}</p><div className="boss-divider" /><p className="boss-transmission">“{intro.transmission}”</p><dl><dt>THEATRE</dt><dd>{intro.directive}</dd><dt>DIRECTIVE</dt><dd>BREAK COMMAND LINK</dd></dl><div className="boss-intro-actions"><button type="button" className="primary-console-button" onClick={onEngage}>ENGAGE BOSS FRAME</button><button type="button" className="boss-skip-button" onClick={onSkip}>SKIP UPLINK</button></div></div></div>
     <div className="boss-intro-footer">BOSS UPLINK // PRESS ENGAGE TO INITIATE COMBAT</div>
+  </section>;
+}
+
+function CampaignEpilogue({ onAcknowledge }: { onAcknowledge: () => void }) {
+  return <section className="campaign-epilogue" role="dialog" aria-modal="true" aria-label="Campaign ending epilogue">
+    <div className="epilogue-starfield" /><div className="epilogue-signal" />
+    <header className="epilogue-header"><span>FINAL TRANSMISSION // NIGHT VAULT</span><span>CAMPAIGN CLEAR</span></header>
+    <div className="epilogue-content"><div className="epilogue-reel"><div className="epilogue-frame frame-a"><img src={AEGIS_ART} alt="Aegis Rift standing above the restored rail network" /><span>01 // CROWN LINK BROKEN</span></div><div className="epilogue-frame frame-b"><span className="epilogue-reactor">✦</span><span>02 // VAULT REACTOR STABLE</span></div><div className="epilogue-frame frame-c"><span className="epilogue-sun" /><span>03 // RUSTBELT DAWN</span></div></div><div className="epilogue-copy"><span className="epilogue-kicker">THE LAST SIGNAL FADES</span><h2>THE CROWN<br /><em>FELL SILENT</em></h2><p>Zero Crown’s command lattice collapsed into the Night Vault. Across the Rustbelt, rail relays came back online—one cyan light at a time.</p><p className="epilogue-quote">“The arena was never the end of the line. It was the power switch.”</p><div className="epilogue-awards"><div><b>20 / 20</b><span>LINKS SECURED</span></div><div><b>✦</b><span>CROWN BREAKER</span></div><div><b>∞</b><span>NEW CYCLE READY</span></div></div><button type="button" className="primary-console-button" onClick={onAcknowledge}>RETURN TO COMMAND DECK</button></div></div>
+    <footer className="epilogue-footer">PIXEL // MECHA BATTLE // END OF CAMPAIGN · BEGINNING OF THE NEXT CYCLE</footer>
   </section>;
 }
 
@@ -153,11 +166,12 @@ export default function GameCanvas() {
   const [hud, setHud] = useState(INITIAL_HUD);
   const [view, setView] = useState<ConsoleView>(initialConsoleView);
   const [loadout, setLoadout] = useState<LoadoutKey>("vanguard");
-  const [missionKey, setMissionKey] = useState<MissionKey>(() => initialBossIntro()?.missionKey ?? "level-01");
+  const [missionKey, setMissionKey] = useState<MissionKey>(() => initialBossIntro()?.missionKey ?? (initialEpilogue() ? "level-20" : "level-01"));
   const [stageFilter, setStageFilter] = useState<CampaignStage>(1);
   const [progress, setProgress] = useState<CampaignProgress>(() => loadLocal("pixel-mecha-campaign", DEFAULT_PROGRESS));
   const [settings, setSettings] = useState<CabinetSettings>(() => loadLocal("pixel-mecha-settings", DEFAULT_SETTINGS));
   const [bossIntro, setBossIntro] = useState<BossIntroData | null>(initialBossIntro);
+  const [epilogue, setEpilogue] = useState(initialEpilogue);
 
   useEffect(() => { window.localStorage.setItem("pixel-mecha-campaign", JSON.stringify(progress)); }, [progress]);
   useEffect(() => { window.localStorage.setItem("pixel-mecha-settings", JSON.stringify(settings)); }, [settings]);
@@ -167,6 +181,7 @@ export default function GameCanvas() {
     setMissionKey(preview.missionKey);
     setBossIntro(preview);
   }, []);
+  useEffect(() => { if (hud.matchState === "match-victory" && hud.missionKey === "level-20") setEpilogue(true); }, [hud.matchState, hud.missionKey]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -201,7 +216,7 @@ export default function GameCanvas() {
       if (CAMPAIGN_LEVELS.filter((item) => item.stage === 1).every((item) => completed.includes(item.key))) achievements.add("frontier-cleared");
       if (completed.some((key) => MISSIONS[key]?.stage === 3)) achievements.add("vault-breaker");
       if (completed.includes("level-20")) achievements.add("zero-crown");
-      return { credits, completed, medals: Array.from(medals), battlesWon: current.battlesWon + 1, achievements: Array.from(achievements) };
+      return { credits, completed, medals: Array.from(medals), battlesWon: current.battlesWon + 1, achievements: Array.from(achievements), campaignComplete: current.campaignComplete || hud.missionKey === "level-20" };
     });
   }, [hud.matchState, hud.missionKey, hud.missionReward]);
 
@@ -210,6 +225,7 @@ export default function GameCanvas() {
   const completeSet = new Set(progress.completed.filter((key) => Boolean(MISSIONS[key])));
   const completeLevels = Array.from(completeSet);
   const medalSet = new Set((progress.medals ?? []).filter((key) => Boolean(MISSIONS[key])));
+  const campaignComplete = progress.campaignComplete || completeSet.has("level-20");
   const nextOpen = CAMPAIGN_LEVELS.find((item) => !completeSet.has(item.key));
   const unlockedLevel = nextOpen?.level ?? 20;
   const stageLevels = CAMPAIGN_LEVELS.filter((item) => item.stage === stageFilter);
@@ -218,6 +234,7 @@ export default function GameCanvas() {
   const launch = () => { const intro = BOSS_INTROS[missionKey]; if (intro) { setBossIntro(intro); return; } launchBattle(); };
   const engageBoss = () => { setBossIntro(null); launchBattle(); };
   const returnCommand = () => { gameRef.current?.returnToSelect(); setView("command"); };
+  const acknowledgeEpilogue = () => { setEpilogue(false); returnCommand(); };
   const selectMission = (nextMission: MissionKey) => { setMissionKey(nextMission); setView("hangar"); };
   const setCabinet = (key: keyof CabinetSettings) => setSettings((current) => ({ ...current, [key]: !current[key] }));
 
@@ -241,8 +258,9 @@ export default function GameCanvas() {
       <div className="command-backdrop" style={{ backgroundImage: `linear-gradient(90deg, rgba(9,13,13,.85), rgba(9,13,13,.24)), url(${view === "command" ? ROSTER_ART : mission.backgroundUrl})` }} />
       <header className="command-header"><button type="button" className="command-brand" onClick={() => setView("command")}><span className="brand-reactor" aria-hidden="true"><i /><b /></span><span><strong>PIXEL // MECHA</strong><small>20-LEVEL CAMPAIGN</small></span></button><div className="command-totals"><span>⌬ {progress.credits.toLocaleString()} SALVAGE</span><span>✦ {progress.achievements.length}/4 BADGES</span></div></header>
       <nav className="command-nav"><NavButton active={view === "command"} onClick={() => setView("command")}>COMMAND</NavButton><NavButton active={view === "missions"} onClick={() => setView("missions")}>LEVELS</NavButton><NavButton active={view === "roster"} onClick={() => setView("roster")}>ROSTER</NavButton><NavButton active={view === "rewards"} onClick={() => setView("rewards")}>REWARDS</NavButton><NavButton active={view === "achievements"} onClick={() => setView("achievements")}>BADGES</NavButton><NavButton active={view === "settings"} onClick={() => setView("settings")}>SETTINGS</NavButton></nav>
+      {view === "command" && campaignComplete && <div className="campaign-complete-seal"><span>✦</span><b>CAMPAIGN COMPLETE</b><small>ZERO CROWN TERMINATED // RUSTBELT RELAYS RESTORED</small></div>}
       <div className="console-content">
-        {view === "command" && <section className="command-hero"><div className="hero-kicker">OPS CONTROL // THREE STAGES</div><h1>BREAK<br /><em>THE CROWN</em></h1><p>Twenty combat links span the Scrapline Frontier, Cinder Foundry, and the final Night Vault. Every level increases enemy intent, speed, pressure, and reward.</p><div className="hero-actions"><button type="button" className="primary-console-button" onClick={() => setView("missions")}>OPEN LEVEL BOARD</button><button type="button" className="secondary-console-button" onClick={() => setView("roster")}>VIEW CUSTOM FRAMES</button></div><div className="command-stats"><article><b>{completeLevels.length}/20</b><span>LEVELS SECURED</span></article><article><b>STAGE {Math.min(3, Math.ceil(unlockedLevel / 7))}</b><span>CURRENT PUSH</span></article><article><b>{selected.callsign}</b><span>ACTIVE FRAME</span></article></div></section>}
+        {view === "command" && <section className="command-hero"><div className="hero-kicker">OPS CONTROL // THREE STAGES</div><h1>BREAK<br /><em>THE CROWN</em></h1><p>Twenty combat links span the Scrapline Frontier, Cinder Foundry, and the final Night Vault. Every level increases enemy intent, speed, pressure, and reward.</p><div className="hero-actions"><button type="button" className="primary-console-button" onClick={() => setView("missions")}>DEPLOY // LEVEL BOARD</button><button type="button" className="secondary-console-button" onClick={() => setView("roster")}>INSPECT ACTIVE FRAMES</button></div><div className="command-stats"><article><b>{completeLevels.length}/20</b><span>LEVELS SECURED</span></article><article><b>STAGE {Math.min(3, Math.ceil(unlockedLevel / 7))}</b><span>CURRENT PUSH</span></article><article><b>{selected.callsign}</b><span>ACTIVE FRAME</span></article></div></section>}
         {view === "missions" && <section className="console-panel campaign-board"><div className="panel-heading"><span>CAMPAIGN BOARD // 20 LEVELS</span><h2>SELECT A COMBAT LINK</h2><p>Each new level intensifies hostile AI attack cadence, pursuit pressure, guard timing, chassis integrity, and salvage yield.</p></div><div className="stage-tabs">{([1, 2, 3] as CampaignStage[]).map((stage) => <button type="button" className={stageFilter === stage ? "active" : ""} onClick={() => setStageFilter(stage)} key={stage}>STAGE {stage}</button>)}</div><div className={`stage-rail stage-${stageFilter}`}><div className="stage-rail-header"><span>{stageLevels[0].stageLabel}</span><b>{stageLevels[0].theatre}</b></div><div className="level-grid">{stageLevels.map((item) => { const complete = completeSet.has(item.key); const locked = item.level > unlockedLevel; return <button type="button" disabled={locked} className={`level-card ${complete ? "complete" : ""} ${locked ? "locked" : ""}`} onClick={() => selectMission(item.key)} key={item.key}><span>LEVEL {String(item.level).padStart(2, "0")}</span><strong>{item.title}</strong><small>{locked ? "LINK LOCKED" : complete ? "SECURED" : "READY"}</small><footer><em>AI {item.difficulty}/20</em><b>+{item.reward}</b></footer></button>; })}</div></div></section>}
         {view === "hangar" && <section className="console-panel hangar-console"><div className="panel-heading"><span>{mission.stageLabel} // LEVEL {String(mission.level).padStart(2, "0")}</span><h2>ASSIGN A CUSTOM FRAME</h2><p>{mission.objective} Hostile: <strong>{mission.opponent.label}</strong>.</p></div><div className="hangar-showcase"><img src={AEGIS_ART} alt="Aegis Rift custom cobalt assault frame" /><div><b>ACTIVE PILOT FRAME</b><strong>{selected.label}</strong><p>{selected.description}</p><span>PRISMATIC AEGIS GUARD // TWIN VECTOR ENGINES</span></div></div><div className="loadout-grid expanded">{Object.values(LOADOUTS).map((profile) => <button type="button" className={`loadout-card ${profile.chassis} ${loadout === profile.key ? "selected" : ""}`} onClick={() => setLoadout(profile.key as LoadoutKey)} key={profile.key}><span className="loadout-code">{profile.callsign}</span><span className="mecha-portrait" aria-hidden="true"><i className="portrait-head" /><i className="portrait-torso" /><i className="portrait-arm arm-left" /><i className="portrait-arm arm-right" /><i className="portrait-leg leg-left" /><i className="portrait-leg leg-right" /><b className="portrait-core" /></span><strong>{profile.label}</strong><span className="loadout-description">{profile.description}</span><span className="loadout-stats">HP {profile.maxHp} · SPD {profile.speed.toFixed(2)} · DMG {profile.strikeDamage}</span></button>)}</div><div className="hangar-launch-row"><button type="button" className="secondary-console-button" onClick={() => setView("missions")}>BACK TO LEVELS</button><button type="button" className="primary-console-button" onClick={launch}>LAUNCH LEVEL {String(mission.level).padStart(2, "0")}</button></div></section>}
         {view === "roster" && <section className="console-panel"><div className="panel-heading"><span>BLUE FACTION // CUSTOM INVENTORY</span><h2>FRAME ROSTER</h2><p>Each pilot frame is a specialized chassis with its own silhouette, thruster behavior, defensive response, and combat rhythm.</p></div><div className="roster-table">{Object.values(LOADOUTS).map((profile) => <article className={`roster-row ${profile.chassis}`} key={profile.key}><div className="mini-mecha"><span className="mini-head" /><span className="mini-body" /><span className="mini-core" /><i /></div><div><b>{profile.label}</b><span>{profile.callsign} · {profile.description}</span></div><div className="roster-stat"><small>INTEGRITY</small><strong>{profile.maxHp}</strong></div><div className="roster-stat"><small>SPEED</small><strong>{profile.speed.toFixed(2)}</strong></div><button type="button" onClick={() => { setLoadout(profile.key as LoadoutKey); setView("missions"); }}>FIELD FRAME</button></article>)}</div></section>}
@@ -252,5 +270,6 @@ export default function GameCanvas() {
       </div>
     </section>}
     {bossIntro && <BossIntro intro={bossIntro} onEngage={engageBoss} onSkip={engageBoss} />}
+    {epilogue && <CampaignEpilogue onAcknowledge={acknowledgeEpilogue} />}
   </main>;
 }

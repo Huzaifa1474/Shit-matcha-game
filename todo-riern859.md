@@ -11,3 +11,7 @@
 - [x] Implement an interactive, skippable boss intro overlay before Stage I, Stage II, and Final Stage commander battles.
 - [x] Persist earned completion medals and add medal displays, stage seals, and campaign-finish recognition to the Level Board.
 - [x] Verify intro timing, keyboard/pointer interaction, medal awards, desktop and mobile Level Board presentation, and production build output.
+- [x] Design the Zero Crown epilogue narrative, reward language, and Command Deck return state.
+- [x] Implement a skippable post-victory epilogue cinematic that triggers only after completing Level 20.
+- [x] Persist campaign completion and reflect it through an end-state seal and refreshed Command Deck messaging.
+- [x] Validate the epilogue trigger, acknowledgement action, desktop and mobile layout, and production build output.
