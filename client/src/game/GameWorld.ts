@@ -8,14 +8,14 @@ import type { Scene } from "@babylonjs/core/scene";
 import { AudioManager } from "./AudioManager";
 import { InputManager } from "./InputManager";
 import { Mecha } from "./Mecha";
-import { LOADOUTS, MISSIONS, type HudState, type InputAction, type LoadoutKey, type MatchState, type MissionDefinition, type MissionKey, type SpecialDefinition } from "./types";
+import { COMBO_ROUTES, LOADOUTS, MISSIONS, type ComboInput, type HudState, type InputAction, type LoadoutKey, type MatchState, type MissionDefinition, type MissionKey, type SpecialDefinition } from "./types";
 
 const BACKDROP_URL = "/manus-storage/stage-one-scrapyard-dawn_c2c9282f.png";
 const BLUE_MECHA_URL = "/manus-storage/aegis-rift-custom-frame_bb4c57ca.png";
 const RED_MECHA_URL = "/manus-storage/ember-wraith-custom-frame_75ff79a0.png";
 
-type ImpactIntent = { attacker: Mecha; defender: Mecha; special?: SpecialDefinition };
-type ImpactResult = { attacker: Mecha; defender: Mecha; guarded: boolean; damage: number; inRange: boolean; special?: SpecialDefinition };
+type ImpactIntent = { attacker: Mecha; defender: Mecha; special?: SpecialDefinition; routeFinisher?: boolean };
+type ImpactResult = { attacker: Mecha; defender: Mecha; guarded: boolean; damage: number; inRange: boolean; special?: SpecialDefinition; routeFinisher?: boolean };
 
 export class GameWorld {
   readonly player: Mecha;
@@ -52,6 +52,12 @@ export class GameWorld {
   private combo = 0;
   private comboUntil = 0;
   private overdriveUntil = 0;
+  private routeStep = 0;
+  private routeUntil = 0;
+  private routeFinisherArmed = false;
+  private commanderCounterUntil = 0;
+  private counterStatus = "";
+  private counterStatusUntil = 0;
 
   constructor(scene: Scene, publishHud: (state: HudState) => void, demo: boolean, demoMissionKey: MissionKey = "level-01", demoLoadout: LoadoutKey = "vanguard", private readonly demoSpecial = false) {
     this.scene = scene; this.publishHud = publishHud; this.demo = demo; this.stageGlow = this.buildStage();
@@ -72,7 +78,7 @@ export class GameWorld {
     this.player.setProfile(LOADOUTS[loadout]); this.enemy.setProfile(this.mission.opponent);
     this.applyMissionStage();
     this.round = 1; this.playerRounds = 0; this.enemyRounds = 0; this.matchState = "active"; this.message = `${this.mission.code} // SIGNAL GREEN`;
-    this.player.reset(-3.55, now); this.enemy.reset(3.55, now); this.combo = 0; this.comboUntil = 0; this.overdriveUntil = 0; this.demoStart = now;
+    this.player.reset(-3.55, now); this.enemy.reset(3.55, now); this.combo = 0; this.comboUntil = 0; this.overdriveUntil = 0; this.routeStep = 0; this.routeUntil = 0; this.routeFinisherArmed = false; this.commanderCounterUntil = 0; this.counterStatus = ""; this.counterStatusUntil = 0; this.demoStart = now;
     if (!demoLaunch) this.audio.unlock(); this.audio.play("round"); this.emitHud(true);
   }
 
@@ -82,6 +88,7 @@ export class GameWorld {
   update(delta: number) {
     const now = performance.now() / 1000;
     if (now > this.comboUntil) this.combo = 0;
+    if (now > this.routeUntil) { this.routeStep = 0; this.routeFinisherArmed = false; }
     if (this.matchState === "active") { if (this.demo) this.runDemo(now, delta); else this.runLiveInputs(now, delta); this.player.update(now, delta); this.enemy.update(now, delta); this.resolveImpacts(now); }
     else { this.player.update(now, delta); this.enemy.update(now, delta); if (this.matchState === "round-result" && now >= this.nextRoundAt) this.beginNextRound(now); }
     this.updateSceneMotion(now); if (now - this.lastHudPublish > 0.09) this.emitHud();
@@ -94,16 +101,36 @@ export class GameWorld {
     const direction = (this.input.isDown("right") ? 1 : 0) - (this.input.isDown("left") ? 1 : 0);
     this.player.move(direction, delta, now); this.player.setGuard(this.input.isDown("guard"), now);
     if (this.input.isDown("boost") && now > this.lastBoostAt && this.player.boost(direction, now)) { this.lastBoostAt = now + 0.72; this.message = "VECTOR BOOST // ENGINE OUTPUT MAX"; this.audio.play("step"); }
-    if (this.input.isDown("special") && now > this.lastSpecialAt && this.player.startSpecial(now)) { const special = this.player.special; if (special && (special.kind === "lunge" || special.kind === "blink")) this.player.specialApproach(this.enemy.x, special.range); this.lastSpecialAt = now + (special?.cooldown ?? 2); this.message = `${this.player.label} // ${special?.name ?? "SPECIAL"}`; this.audio.play("strike"); }
+    if (this.input.isDown("special") && now > this.lastSpecialAt && this.player.startSpecial(now)) { const special = this.player.special; if (special && (special.kind === "lunge" || special.kind === "blink")) this.player.specialApproach(this.enemy.x, special.range); this.lastSpecialAt = now + (special?.cooldown ?? 2); this.registerRouteInput("special", now); this.message = `${this.player.label} // ${special?.name ?? "SPECIAL"}`; this.audio.play("strike"); }
     if (direction !== 0 && now > this.lastStepAt) { this.audio.play("step"); this.lastStepAt = now + 0.25; }
     if (this.input.isDown("guard") && now > this.lastGuardAt) { this.audio.play("guard"); this.lastGuardAt = now + 0.42; }
-    if (this.input.isDown("strike") && this.player.startStrike(now)) this.audio.play("strike");
+    if (this.input.isDown("strike") && this.player.startStrike(now)) { this.registerRouteInput("strike", now); this.audio.play("strike"); }
     this.runEnemyAi(now, delta);
   }
 
   private runEnemyAi(now: number, delta: number) {
     const tuning = this.mission.ai;
     const distance = this.enemy.x - this.player.x;
+    const incomingSpecial = this.player.action === "special" ? this.player.special : undefined;
+    const commander = this.mission.level === 7 || this.mission.level === 14 || this.mission.level === 20;
+    if (commander && incomingSpecial && now > this.commanderCounterUntil) {
+      this.commanderCounterUntil = now + Math.max(0.7, 1.32 - tuning.aggression * 0.48);
+      if (incomingSpecial.kind === "lunge" || incomingSpecial.kind === "blink" || incomingSpecial.kind === "volley") {
+        const escape = this.enemy.x >= this.player.x ? 1 : -1;
+        this.enemy.boost(escape, now);
+        window.setTimeout(() => this.enemy.setGuard(true, performance.now() / 1000), 95);
+        window.setTimeout(() => this.enemy.setGuard(false, performance.now() / 1000), 390 + tuning.guardChance * 170);
+        this.counterStatus = `COMMANDER COUNTER // VECTOR EVADE · ${incomingSpecial.name}`;
+      } else {
+        this.enemy.setGuard(true, now);
+        window.setTimeout(() => this.enemy.setGuard(false, performance.now() / 1000), 300 + tuning.guardChance * 220);
+        this.counterStatus = `COMMANDER COUNTER // HARD GUARD · ${incomingSpecial.name}`;
+      }
+      this.counterStatusUntil = now + 1.15;
+      this.message = this.counterStatus;
+      this.audio.play("guard");
+      return;
+    }
     if (Math.abs(distance) > tuning.pursuitRange) { this.enemy.move(distance > 0 ? -1 : 1, delta * (0.84 + tuning.aggression * 0.3), now); return; }
     this.enemy.move(0, delta, now);
     if (now < this.nextAiAt) return;
@@ -127,21 +154,42 @@ export class GameWorld {
     else if (phase < 6.1) { if (phase > 5.3 && phase < 5.47) this.enemy.startStrike(now); } else if (phase < 6.8) { if (phase > 6.15 && phase < 6.32 && this.player.startSpecial(now)) { const special = this.player.special; if (special && (special.kind === "lunge" || special.kind === "blink")) this.player.specialApproach(this.enemy.x, special.range); } } else this.player.setGuard(true, now);
   }
 
+  private registerRouteInput(input: ComboInput, now: number) {
+    const route = COMBO_ROUTES[this.selectedLoadout];
+    if (now > this.routeUntil) { this.routeStep = 0; this.routeFinisherArmed = false; }
+    const expected = route.sequence[this.routeStep];
+    if (input === expected) {
+      this.routeStep += 1;
+      this.routeUntil = now + route.window;
+      if (this.routeStep >= route.sequence.length) {
+        this.routeStep = 0;
+        this.routeFinisherArmed = true;
+        this.routeUntil = now + 0.78;
+        this.message = `${route.label} // ${route.finisher} ARMED`;
+      }
+      return;
+    }
+    this.routeStep = input === route.sequence[0] ? 1 : 0;
+    this.routeUntil = this.routeStep ? now + route.window : 0;
+    this.routeFinisherArmed = false;
+  }
+
   private resolveImpacts(now: number) {
     const intents: ImpactIntent[] = [];
-    if (this.player.needsImpact(now)) intents.push({ attacker: this.player, defender: this.enemy });
+    if (this.player.needsImpact(now)) intents.push({ attacker: this.player, defender: this.enemy, routeFinisher: this.routeFinisherArmed });
     if (this.enemy.needsImpact(now)) intents.push({ attacker: this.enemy, defender: this.player });
-    if (this.player.needsSpecialImpact(now) && this.player.special) intents.push({ attacker: this.player, defender: this.enemy, special: this.player.special });
+    if (this.player.needsSpecialImpact(now) && this.player.special) intents.push({ attacker: this.player, defender: this.enemy, special: this.player.special, routeFinisher: this.routeFinisherArmed });
     if (!intents.length) return;
     const playerCleanIntent = intents.some(({ attacker, defender, special }) => attacker === this.player && Math.abs(attacker.x - defender.x) <= (special?.range ?? 2.48) && !defender.isGuarding);
     const playerSpecialIntent = intents.some(({ attacker, special }) => attacker === this.player && Boolean(special));
     const proposedCombo = playerCleanIntent ? (now <= this.comboUntil ? this.combo + (playerSpecialIntent ? 2 : 1) : playerSpecialIntent ? 2 : 1) : 0;
     const overdriveStrike = proposedCombo >= 3;
-    const outcomes: ImpactResult[] = intents.map(({ attacker, defender, special }) => {
+    const outcomes: ImpactResult[] = intents.map(({ attacker, defender, special, routeFinisher }) => {
       const inRange = Math.abs(attacker.x - defender.x) <= (special?.range ?? 2.48);
       const guarded = defender.isGuarding;
-      const damage = Math.ceil(attacker.strikeDamage * (special?.damageMultiplier ?? 1) * (attacker === this.player && overdriveStrike ? 1.42 : 1));
-      return { attacker, defender, inRange, guarded, damage, special };
+      const routeMultiplier = attacker === this.player && routeFinisher ? COMBO_ROUTES[this.selectedLoadout].finisherMultiplier : 1;
+      const damage = Math.ceil(attacker.strikeDamage * (special?.damageMultiplier ?? 1) * routeMultiplier * (attacker === this.player && overdriveStrike ? 1.42 : 1));
+      return { attacker, defender, inRange, guarded, damage, special, routeFinisher };
     });
     outcomes.forEach((outcome) => { if (outcome.inRange) { const resolved = outcome.defender.receiveDamage(outcome.damage, now); outcome.guarded = resolved.guarded; outcome.damage = resolved.damage; } });
     const cleanHits = outcomes.filter((outcome) => outcome.inRange);
@@ -152,8 +200,10 @@ export class GameWorld {
       this.impactFlash.position = new Vector3(midpoint, -0.5, -0.6); this.impactFlash.scaling.setAll(cleanHits.some((outcome) => outcome.guarded) ? 0.86 : specialHit ? 1.82 : 1.22); this.impactFlash.isVisible = true; this.impactFlashUntil = now + (specialHit ? 0.32 : 0.2);
       this.impactKickUntil = now + (cleanHits.some((outcome) => outcome.guarded) ? 0.075 : specialHit ? 0.18 : 0.12); this.impactKickDirection = cleanHits[0].attacker === this.player ? -1 : 1;
       this.audio.play(cleanHits.some((outcome) => outcome.guarded) ? "guard" : "impact");
-      this.message = specialHit ? `${specialHit.attacker.label} // ${specialHit.special?.name ?? "SPECIAL"} · ${specialHit.damage} DAMAGE` : overdriveStrike ? `OVERDRIVE COMBO // ${proposedCombo}X · ${cleanHits.find((outcome) => outcome.attacker === this.player)?.damage ?? 0} DAMAGE` : cleanHits.length === 2 ? "SYNC IMPACT // BOTH FRAMES CONNECT" : cleanHits[0].guarded ? `${cleanHits[0].defender.label} // PRISM GUARD HOLDS` : `${cleanHits[0].attacker.label} // CLEAN HIT · ${cleanHits[0].damage} DAMAGE`;
+      const routeHit = cleanHits.find((outcome) => outcome.routeFinisher);
+      this.message = routeHit ? `${COMBO_ROUTES[this.selectedLoadout].finisher} // ROUTE FINISH · ${routeHit.damage} DAMAGE` : specialHit ? `${specialHit.attacker.label} // ${specialHit.special?.name ?? "SPECIAL"} · ${specialHit.damage} DAMAGE` : overdriveStrike ? `OVERDRIVE COMBO // ${proposedCombo}X · ${cleanHits.find((outcome) => outcome.attacker === this.player)?.damage ?? 0} DAMAGE` : cleanHits.length === 2 ? "SYNC IMPACT // BOTH FRAMES CONNECT" : cleanHits[0].guarded ? `${cleanHits[0].defender.label} // PRISM GUARD HOLDS` : `${cleanHits[0].attacker.label} // CLEAN HIT · ${cleanHits[0].damage} DAMAGE`;
     } else this.message = `${intents[0].attacker.label} // STRIKE MISSED`;
+    if (intents.some((intent) => intent.attacker === this.player && intent.routeFinisher)) this.routeFinisherArmed = false;
     if (this.player.isDown && this.enemy.isDown) this.finishRound("draw", now); else if (this.enemy.isDown) this.finishRound("player", now); else if (this.player.isDown) this.finishRound("enemy", now);
     this.emitHud(true);
   }
@@ -169,8 +219,8 @@ export class GameWorld {
 
   private emitHud(force = false) {
     const now = performance.now() / 1000; if (!force && now - this.lastHudPublish < 0.08) return; this.lastHudPublish = now;
-    const profile = LOADOUTS[this.selectedLoadout];
-    this.publishHud({ playerHp: this.player.hp, playerMaxHp: this.player.maxHp, enemyHp: this.enemy.hp, enemyMaxHp: this.enemy.maxHp, playerState: this.player.action, enemyState: this.enemy.action, playerX: this.player.x, enemyX: this.enemy.x, matchState: this.matchState, round: this.round, playerRounds: this.playerRounds, enemyRounds: this.enemyRounds, enemyLabel: this.mission.opponent.label, enemyCallsign: this.mission.opponent.callsign, playerLabel: profile.label, playerCallsign: profile.callsign, selectedLoadout: this.selectedLoadout, missionKey: this.mission.key, missionTitle: this.mission.title, missionObjective: this.mission.objective, missionReward: this.mission.reward, missionLevel: this.mission.level, stage: this.mission.stage, stageLabel: this.mission.stageLabel, theatreClass: this.mission.theatreClass, locationKey: this.mission.location.key, locationLabel: this.mission.location.label, locationCallout: this.mission.location.callout, surface: this.mission.location.surface, locationAccent: this.mission.location.accent, atmosphere: this.mission.location.atmosphere, backgroundUrl: this.mission.backgroundUrl, enemyArtUrl: this.mission.enemyArtUrl, soundOn: this.audio.isEnabled, combo: this.combo, overdrive: now < this.overdriveUntil, message: this.message });
+    const profile = LOADOUTS[this.selectedLoadout]; const route = COMBO_ROUTES[this.selectedLoadout]; const specialCooldown = this.player.getSpecialCooldown(now);
+    this.publishHud({ playerHp: this.player.hp, playerMaxHp: this.player.maxHp, enemyHp: this.enemy.hp, enemyMaxHp: this.enemy.maxHp, playerState: this.player.action, enemyState: this.enemy.action, playerX: this.player.x, enemyX: this.enemy.x, matchState: this.matchState, round: this.round, playerRounds: this.playerRounds, enemyRounds: this.enemyRounds, playerLabel: profile.label, playerCallsign: profile.callsign, enemyLabel: this.mission.opponent.label, enemyCallsign: this.mission.opponent.callsign, selectedLoadout: this.selectedLoadout, missionKey: this.mission.key, missionTitle: this.mission.title, missionObjective: this.mission.objective, missionReward: this.mission.reward, missionLevel: this.mission.level, stage: this.mission.stage, stageLabel: this.mission.stageLabel, theatreClass: this.mission.theatreClass, locationKey: this.mission.location.key, locationLabel: this.mission.location.label, locationCallout: this.mission.location.callout, surface: this.mission.location.surface, locationAccent: this.mission.location.accent, atmosphere: this.mission.location.atmosphere, backgroundUrl: this.mission.backgroundUrl, enemyArtUrl: this.mission.enemyArtUrl, soundOn: this.audio.isEnabled, combo: this.combo, overdrive: now < this.overdriveUntil, specialCooldown, specialReady: specialCooldown <= 0, routeLabel: route.label, routeStep: this.routeStep, routeLength: route.sequence.length, routeNextInput: route.sequence[Math.min(this.routeStep, route.sequence.length - 1)], routeFinisherArmed: this.routeFinisherArmed, counterStatus: now < this.counterStatusUntil ? this.counterStatus : "", message: this.message });
   }
 
   private buildStage() {

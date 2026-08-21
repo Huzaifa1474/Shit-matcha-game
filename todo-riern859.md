@@ -28,3 +28,7 @@
 - [x] Define a distinct tactical special move, cooldown, damage profile, and cue for every playable chassis.
 - [x] Implement the shared special input plus frame-specific move behavior, HUD telemetry, VFX, and impact resolution.
 - [x] Validate all five specials across desktop and mobile controls, visual state changes, build output, and runtime logs.
+- [x] Audit special cooldown state, current clean-hit combo timing, and commander action-selection hooks.
+- [x] Define visual cooldown telemetry, a three-step route for each chassis, and readable counterplay rules for every special type.
+- [x] Implement live cooldown gauges, chassis route progression and finishers, plus commander recognition and counter responses.
+- [x] Validate cooldown clarity, route rewards, counter behavior, desktop/mobile controls, logs, and production build output.

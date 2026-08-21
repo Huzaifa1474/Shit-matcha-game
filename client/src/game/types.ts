@@ -12,6 +12,8 @@ export type ChassisKind = "balanced" | "heavy" | "scout" | "bulwark" | "winged" 
 
 export type SpecialKind = "lunge" | "fortify" | "blink" | "slam" | "volley";
 export interface SpecialDefinition { key: string; name: string; tactical: string; kind: SpecialKind; damageMultiplier: number; range: number; cooldown: number; }
+export type ComboInput = "strike" | "special";
+export interface ComboRoute { label: string; sequence: ComboInput[]; finisher: string; tactical: string; window: number; finisherMultiplier: number; }
 export interface MechaProfile { key: LoadoutKey | string; label: string; callsign: string; maxHp: number; speed: number; strikeDamage: number; guardMultiplier: number; frameScale: number; accent: string; flare: string; description: string; chassis: ChassisKind; special?: SpecialDefinition; }
 export interface AiTuning { aggression: number; attackInterval: number; guardChance: number; pursuitRange: number; }
 export interface LocationDefinition { key: string; label: string; callout: string; surface: SurfaceKind; accent: string; atmosphere: string; }
@@ -23,6 +25,14 @@ export const LOADOUTS: Record<LoadoutKey, MechaProfile> = {
   sparkrunner: { key: "sparkrunner", label: "SPARKRUNNER ARC", callsign: "PILOT-07", maxHp: 85, speed: 4.3, strikeDamage: 13, guardMultiplier: 0.33, frameScale: 0.9, accent: "#38a5ca", flare: "#7de8d0", description: "Fast relay hunter with a compact antenna crest and evasive booster frame.", chassis: "scout", special: { key: "arc-shift", name: "ARC SHIFT", tactical: "Vector blink into a fast close-range slash from outside standard reach.", kind: "blink", damageMultiplier: 1.42, range: 4.15, cooldown: 2.25 } },
   bulwark: { key: "bulwark", label: "BULWARK-9", callsign: "PILOT-11", maxHp: 142, speed: 2.38, strikeDamage: 20, guardMultiplier: 0.15, frameScale: 1.2, accent: "#65777d", flare: "#ffbe3b", description: "Siege-frame interceptor with fortress shoulders and a high-mass cutter arm.", chassis: "bulwark", special: { key: "citadel-hammer", name: "CITADEL HAMMER", tactical: "High-mass ground slam with a wide shockwave hit zone.", kind: "slam", damageMultiplier: 2.14, range: 3.05, cooldown: 3.7 } },
   pulsewing: { key: "pulsewing", label: "PULSEWING NOVA", callsign: "PILOT-14", maxHp: 92, speed: 4.05, strikeDamage: 16, guardMultiplier: 0.28, frameScale: 0.94, accent: "#446bd1", flare: "#69e7ff", description: "Wing-fin combat frame that converts booster precision into strike tempo.", chassis: "winged", special: { key: "nova-volley", name: "NOVA VOLLEY", tactical: "Wing-fin blast volley that carries the longest strike reach.", kind: "volley", damageMultiplier: 1.56, range: 4.65, cooldown: 3.1 } },
+};
+
+export const COMBO_ROUTES: Record<LoadoutKey, ComboRoute> = {
+  vanguard: { label: "RAIL TRIAD", sequence: ["strike", "strike", "special"], finisher: "PRISM BREAKER", tactical: "Two clean saber cuts prime a guard-piercing lunge.", window: 1.45, finisherMultiplier: 1.28 },
+  ironclad: { label: "BASTION SEQUENCE", sequence: ["strike", "special", "strike"], finisher: "BREACH HAMMER", tactical: "Crash through pressure, then punish from a fortified stance.", window: 1.62, finisherMultiplier: 1.34 },
+  sparkrunner: { label: "ARC CASCADE", sequence: ["special", "strike", "strike"], finisher: "RELAY RIPOSTE", tactical: "Blink in first, then accelerate through a two-hit punish.", window: 1.22, finisherMultiplier: 1.3 },
+  bulwark: { label: "SIEGE CYCLE", sequence: ["strike", "strike", "special"], finisher: "CITADEL COLLAPSE", tactical: "Lock the target with heavy cuts before a shockwave finisher.", window: 1.72, finisherMultiplier: 1.42 },
+  pulsewing: { label: "NOVA WEAVE", sequence: ["strike", "special", "strike"], finisher: "SKYLINE BURST", tactical: "Thread a wing volley between blades to finish at high speed.", window: 1.34, finisherMultiplier: 1.33 },
 };
 
 const STAGE_BACKGROUNDS: Record<TheatreClass, string> = { frontier: "/manus-storage/stage-one-scrapyard-dawn_c2c9282f.png", foundry: "/manus-storage/stage-two-cinder-foundry_0ec1dcff.png", vault: "/manus-storage/stage-three-night-vault_f0020e9b.png" };
@@ -69,7 +79,7 @@ export const CAMPAIGN_LEVELS = Array.from({ length: 20 }, (_, index) => makeLeve
 export const MISSIONS: Record<MissionKey, MissionDefinition> = Object.fromEntries(CAMPAIGN_LEVELS.map((mission) => [mission.key, mission]));
 
 export interface HudState {
-  playerHp: number; playerMaxHp: number; enemyHp: number; enemyMaxHp: number; playerState: MechaAction; enemyState: MechaAction; playerX: number; enemyX: number; matchState: MatchState; round: number; playerRounds: number; enemyRounds: number; playerLabel: string; playerCallsign: string; enemyLabel: string; enemyCallsign: string; selectedLoadout: LoadoutKey; missionKey: MissionKey; missionTitle: string; missionObjective: string; missionReward: number; missionLevel: number; stage: CampaignStage; stageLabel: string; theatreClass: TheatreClass; locationKey: string; locationLabel: string; locationCallout: string; surface: SurfaceKind; locationAccent: string; atmosphere: string; backgroundUrl: string; enemyArtUrl: string; soundOn: boolean; combo: number; overdrive: boolean; message: string;
+  playerHp: number; playerMaxHp: number; enemyHp: number; enemyMaxHp: number; playerState: MechaAction; enemyState: MechaAction; playerX: number; enemyX: number; matchState: MatchState; round: number; playerRounds: number; enemyRounds: number; playerLabel: string; playerCallsign: string; enemyLabel: string; enemyCallsign: string; selectedLoadout: LoadoutKey; missionKey: MissionKey; missionTitle: string; missionObjective: string; missionReward: number; missionLevel: number; stage: CampaignStage; stageLabel: string; theatreClass: TheatreClass; locationKey: string; locationLabel: string; locationCallout: string; surface: SurfaceKind; locationAccent: string; atmosphere: string; backgroundUrl: string; enemyArtUrl: string; soundOn: boolean; combo: number; overdrive: boolean; specialCooldown: number; specialReady: boolean; routeLabel: string; routeStep: number; routeLength: number; routeNextInput: ComboInput; routeFinisherArmed: boolean; counterStatus: string; message: string;
 }
 
 export interface GameHandle { scene: Scene; update: (delta: number) => void; setAction: (action: InputAction, pressed: boolean) => void; startMatch: (loadout: LoadoutKey, mission: MissionKey) => void; returnToSelect: () => void; toggleAudio: () => boolean; dispose: () => void; }
