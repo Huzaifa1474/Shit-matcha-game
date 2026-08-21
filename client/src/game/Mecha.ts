@@ -8,14 +8,7 @@ import type { Scene } from "@babylonjs/core/scene";
 import type { MechaAction, MechaProfile } from "./types";
 
 type FramePart = "torso" | "helmet" | "visor" | "shoulderLeft" | "shoulderRight" | "armFront" | "armBack" | "core" | "legLeft" | "legRight" | "footLeft" | "footRight";
-
-export interface MechaConfig {
-  id: "player" | "enemy";
-  startX: number;
-  direction: 1 | -1;
-  textureUrl: string;
-  profile: MechaProfile;
-}
+export interface MechaConfig { id: "player" | "enemy"; startX: number; direction: 1 | -1; textureUrl: string; profile: MechaProfile; }
 
 export class Mecha {
   readonly root: TransformNode;
@@ -36,241 +29,42 @@ export class Mecha {
   private readonly strike: AbstractMesh;
   private readonly shield: AbstractMesh;
   private readonly flair: AbstractMesh;
+  private readonly enginePods: AbstractMesh[] = [];
+  private readonly engineFlares: AbstractMesh[] = [];
+  private readonly engineMaterials: StandardMaterial[] = [];
   private readonly parts = {} as Record<FramePart, AbstractMesh>;
-  private readonly basePose: Record<FramePart, [number, number]> = {
-    torso: [0, 0.04], helmet: [0.12, 0.75], visor: [0.12, 0.75], shoulderLeft: [-0.65, 0.38], shoulderRight: [0.65, 0.38], armFront: [0.77, -0.18], armBack: [-0.77, -0.18], core: [0.12, 0.03], legLeft: [-0.34, -0.86], legRight: [0.34, -0.86], footLeft: [-0.38, -1.34], footRight: [0.38, -1.34],
-  };
+  private readonly basePose: Record<FramePart, [number, number]> = { torso: [0, 0.04], helmet: [0.12, 0.75], visor: [0.12, 0.75], shoulderLeft: [-0.65, 0.38], shoulderRight: [0.65, 0.38], armFront: [0.77, -0.18], armBack: [-0.77, -0.18], core: [0.12, 0.03], legLeft: [-0.34, -0.86], legRight: [0.34, -0.86], footLeft: [-0.38, -1.34], footRight: [0.38, -1.34] };
   private accent: Color3;
   private flare: Color3;
   private moveAmount = 0;
 
   constructor(scene: Scene, config: MechaConfig) {
-    this.id = config.id;
-    this.direction = config.direction;
-    this.profile = config.profile;
-    this.label = config.profile.label;
-    this.hp = config.profile.maxHp;
-    this.accent = Color3.FromHexString(config.profile.accent);
-    this.flare = Color3.FromHexString(config.profile.flare);
-    this.root = new TransformNode(`${config.id}-root`, scene);
-    this.root.position.set(config.startX, -1.2, 0);
-
-    this.shadow = MeshBuilder.CreateDisc(`${config.id}-shadow`, { radius: 1.1, tessellation: 16 }, scene);
-    this.shadow.parent = this.root;
-    this.shadow.position.set(0, -1.45, 0.05);
-    this.shadow.scaling.y = 0.24;
-    const shadowMaterial = new StandardMaterial(`${config.id}-shadow-material`, scene);
-    shadowMaterial.diffuseColor = new Color3(0.02, 0.03, 0.03);
-    shadowMaterial.alpha = 0.45;
-    shadowMaterial.disableLighting = true;
-    this.shadow.material = shadowMaterial;
-
-    this.sprite = MeshBuilder.CreatePlane(`${config.id}-sprite`, { width: 2.85, height: 2.85 }, scene);
-    this.sprite.parent = this.root;
-    this.sprite.position.set(0, 0, -0.18);
-    this.spriteMaterial = new StandardMaterial(`${config.id}-sprite-material`, scene);
-    const spriteTexture = new Texture(config.textureUrl, scene, true, false);
-    spriteTexture.hasAlpha = true;
-    this.spriteMaterial.diffuseTexture = spriteTexture;
-    this.spriteMaterial.useAlphaFromDiffuseTexture = true;
-    this.spriteMaterial.alpha = 0.94;
-    this.spriteMaterial.specularColor = Color3.Black();
-    this.spriteMaterial.diffuseColor = Color3.White();
-    this.spriteMaterial.emissiveColor = new Color3(0.35, 0.35, 0.35);
-    this.spriteMaterial.backFaceCulling = false;
-    this.sprite.material = this.spriteMaterial;
-
-    this.shield = MeshBuilder.CreateDisc(`${config.id}-shield`, { radius: 1.55, tessellation: 8 }, scene);
-    this.shield.parent = this.root;
-    this.shield.position.set(config.direction * 0.37, 0, -0.1);
-    const shieldMaterial = new StandardMaterial(`${config.id}-shield-material`, scene);
-    shieldMaterial.diffuseColor = this.accent;
-    shieldMaterial.emissiveColor = this.accent.scale(0.8);
-    shieldMaterial.alpha = 0.28;
-    shieldMaterial.disableLighting = true;
-    this.shield.material = shieldMaterial;
-    this.shield.isVisible = false;
-
-    this.strike = MeshBuilder.CreatePlane(`${config.id}-strike`, { width: 1.72, height: 0.22 }, scene);
-    this.strike.parent = this.root;
-    this.strike.position.set(config.direction * 1.55, 0.08, -0.4);
-    const strikeMaterial = new StandardMaterial(`${config.id}-strike-material`, scene);
-    strikeMaterial.diffuseColor = this.flare;
-    strikeMaterial.emissiveColor = this.flare;
-    strikeMaterial.alpha = 0.88;
-    strikeMaterial.disableLighting = true;
-    this.strike.material = strikeMaterial;
-    this.strike.rotation.z = config.direction === 1 ? -0.18 : 0.18;
-    this.strike.isVisible = false;
-
-    this.flair = MeshBuilder.CreateDisc(`${config.id}-flair`, { radius: 0.5, tessellation: 8 }, scene);
-    this.flair.parent = this.root;
-    this.flair.position.set(config.direction * 1.34, 0.15, -0.35);
-    const flairMaterial = new StandardMaterial(`${config.id}-flair-material`, scene);
-    flairMaterial.diffuseColor = this.flare;
-    flairMaterial.emissiveColor = this.flare;
-    flairMaterial.alpha = 0.86;
-    flairMaterial.disableLighting = true;
-    this.flair.material = flairMaterial;
-    this.flair.isVisible = false;
-
-    const shellMaterial = new StandardMaterial(`${config.id}-shell`, scene);
-    shellMaterial.diffuseColor = this.accent;
-    shellMaterial.emissiveColor = this.accent.scale(0.22);
-    const jointMaterial = new StandardMaterial(`${config.id}-joint`, scene);
-    jointMaterial.diffuseColor = Color3.FromHexString("#18201f");
-    jointMaterial.emissiveColor = Color3.FromHexString("#071111");
-    const signalMaterial = new StandardMaterial(`${config.id}-signal`, scene);
-    signalMaterial.diffuseColor = this.flare;
-    signalMaterial.emissiveColor = this.flare;
-    signalMaterial.disableLighting = true;
-    const part = (name: FramePart, width: number, height: number, material: StandardMaterial) => {
-      const mesh = MeshBuilder.CreateBox(`${config.id}-${name}`, { width, height, depth: 0.18 }, scene);
-      mesh.parent = this.root;
-      const [x, y] = this.basePose[name];
-      mesh.position.set(x * (name === "helmet" || name === "visor" || name === "core" || name === "armFront" ? this.direction : 1), y, -0.63);
-      mesh.material = material;
-      this.parts[name] = mesh;
-    };
-    part("torso", 1.05, 0.94, shellMaterial); part("helmet", 0.62, 0.44, shellMaterial); part("visor", 0.42, 0.09, signalMaterial);
-    part("shoulderLeft", 0.48, 0.34, shellMaterial); part("shoulderRight", 0.48, 0.34, shellMaterial); part("armFront", 0.34, 0.82, jointMaterial); part("armBack", 0.3, 0.74, jointMaterial);
-    part("core", 0.22, 0.22, signalMaterial); part("legLeft", 0.38, 0.88, jointMaterial); part("legRight", 0.38, 0.88, jointMaterial); part("footLeft", 0.58, 0.2, shellMaterial); part("footRight", 0.58, 0.2, shellMaterial);
+    this.id = config.id; this.direction = config.direction; this.profile = config.profile; this.label = config.profile.label; this.hp = config.profile.maxHp; this.accent = Color3.FromHexString(config.profile.accent); this.flare = Color3.FromHexString(config.profile.flare);
+    this.root = new TransformNode(`${config.id}-root`, scene); this.root.position.set(config.startX, -1.2, 0);
+    this.shadow = MeshBuilder.CreateDisc(`${config.id}-shadow`, { radius: 1.1, tessellation: 16 }, scene); this.shadow.parent = this.root; this.shadow.position.set(0, -1.45, 0.05); this.shadow.scaling.y = 0.24;
+    const shadowMaterial = new StandardMaterial(`${config.id}-shadow-material`, scene); shadowMaterial.diffuseColor = new Color3(0.02, 0.03, 0.03); shadowMaterial.alpha = 0.45; shadowMaterial.disableLighting = true; this.shadow.material = shadowMaterial;
+    this.sprite = MeshBuilder.CreatePlane(`${config.id}-sprite`, { width: 2.85, height: 2.85 }, scene); this.sprite.parent = this.root; this.sprite.position.set(0, 0, -0.18);
+    this.spriteMaterial = new StandardMaterial(`${config.id}-sprite-material`, scene); const spriteTexture = new Texture(config.textureUrl, scene, true, false); spriteTexture.hasAlpha = true; this.spriteMaterial.diffuseTexture = spriteTexture; this.spriteMaterial.useAlphaFromDiffuseTexture = true; this.spriteMaterial.alpha = 0.94; this.spriteMaterial.specularColor = Color3.Black(); this.spriteMaterial.diffuseColor = Color3.White(); this.spriteMaterial.emissiveColor = new Color3(0.35, 0.35, 0.35); this.spriteMaterial.backFaceCulling = false; this.sprite.material = this.spriteMaterial;
+    this.shield = MeshBuilder.CreateDisc(`${config.id}-shield`, { radius: 1.55, tessellation: 8 }, scene); this.shield.parent = this.root; this.shield.position.set(config.direction * 0.37, 0, -0.1); const shieldMaterial = new StandardMaterial(`${config.id}-shield-material`, scene); shieldMaterial.diffuseColor = this.accent; shieldMaterial.emissiveColor = this.accent.scale(0.8); shieldMaterial.alpha = 0.28; shieldMaterial.disableLighting = true; this.shield.material = shieldMaterial; this.shield.isVisible = false;
+    this.strike = MeshBuilder.CreatePlane(`${config.id}-strike`, { width: 1.72, height: 0.22 }, scene); this.strike.parent = this.root; this.strike.position.set(config.direction * 1.55, 0.08, -0.4); const strikeMaterial = new StandardMaterial(`${config.id}-strike-material`, scene); strikeMaterial.diffuseColor = this.flare; strikeMaterial.emissiveColor = this.flare; strikeMaterial.alpha = 0.88; strikeMaterial.disableLighting = true; this.strike.material = strikeMaterial; this.strike.rotation.z = config.direction === 1 ? -0.18 : 0.18; this.strike.isVisible = false;
+    this.flair = MeshBuilder.CreateDisc(`${config.id}-flair`, { radius: 0.5, tessellation: 8 }, scene); this.flair.parent = this.root; this.flair.position.set(config.direction * 1.34, 0.15, -0.35); const flairMaterial = new StandardMaterial(`${config.id}-flair-material`, scene); flairMaterial.diffuseColor = this.flare; flairMaterial.emissiveColor = this.flare; flairMaterial.alpha = 0.86; flairMaterial.disableLighting = true; this.flair.material = flairMaterial; this.flair.isVisible = false;
+    const shellMaterial = new StandardMaterial(`${config.id}-shell`, scene); shellMaterial.diffuseColor = this.accent; shellMaterial.emissiveColor = this.accent.scale(0.22); const jointMaterial = new StandardMaterial(`${config.id}-joint`, scene); jointMaterial.diffuseColor = Color3.FromHexString("#18201f"); jointMaterial.emissiveColor = Color3.FromHexString("#071111"); const signalMaterial = new StandardMaterial(`${config.id}-signal`, scene); signalMaterial.diffuseColor = this.flare; signalMaterial.emissiveColor = this.flare; signalMaterial.disableLighting = true;
+    const part = (name: FramePart, width: number, height: number, material: StandardMaterial) => { const mesh = MeshBuilder.CreateBox(`${config.id}-${name}`, { width, height, depth: 0.18 }, scene); mesh.parent = this.root; const [x, y] = this.basePose[name]; mesh.position.set(x * (name === "helmet" || name === "visor" || name === "core" || name === "armFront" ? this.direction : 1), y, -0.63); mesh.material = material; this.parts[name] = mesh; };
+    part("torso", 1.05, 0.94, shellMaterial); part("helmet", 0.62, 0.44, shellMaterial); part("visor", 0.42, 0.09, signalMaterial); part("shoulderLeft", 0.48, 0.34, shellMaterial); part("shoulderRight", 0.48, 0.34, shellMaterial); part("armFront", 0.34, 0.82, jointMaterial); part("armBack", 0.3, 0.74, jointMaterial); part("core", 0.22, 0.22, signalMaterial); part("legLeft", 0.38, 0.88, jointMaterial); part("legRight", 0.38, 0.88, jointMaterial); part("footLeft", 0.58, 0.2, shellMaterial); part("footRight", 0.58, 0.2, shellMaterial);
+    for (const index of [-1, 1]) { const pod = MeshBuilder.CreateBox(`${config.id}-engine-pod-${index}`, { width: 0.28, height: 0.48, depth: 0.18 }, scene); pod.parent = this.root; pod.position.set(-config.direction * 0.68, index * 0.34 - 0.12, -0.55); pod.material = jointMaterial; this.enginePods.push(pod); const engine = MeshBuilder.CreatePlane(`${config.id}-engine-flare-${index}`, { width: 0.56, height: 0.22 }, scene); engine.parent = this.root; engine.position.set(-config.direction * 1.06, index * 0.34 - 0.12, -0.58); const engineMaterial = new StandardMaterial(`${config.id}-engine-material-${index}`, scene); engineMaterial.diffuseColor = this.flare; engineMaterial.emissiveColor = this.flare; engineMaterial.alpha = 0.76; engineMaterial.disableLighting = true; engine.material = engineMaterial; this.engineFlares.push(engine); this.engineMaterials.push(engineMaterial); }
     this.setProfile(config.profile);
   }
 
-  get x() { return this.root.position.x; }
-  get maxHp() { return this.profile.maxHp; }
-  get speed() { return this.profile.speed; }
-  get strikeDamage() { return this.profile.strikeDamage; }
-  get isDown() { return this.action === "down"; }
-  get isGuarding() { return this.action === "guard"; }
-  get canStrike() { return !this.isDown && this.action !== "damaged"; }
-
-  setProfile(profile: MechaProfile) {
-    this.profile = profile;
-    this.label = profile.label;
-    this.accent = Color3.FromHexString(profile.accent);
-    this.flare = Color3.FromHexString(profile.flare);
-    this.root.scaling.setAll(profile.frameScale);
-  }
-
-  move(amount: number, delta: number, now: number) {
-    if (this.isDown || this.action === "strike" || this.action === "damaged") return;
-    this.moveAmount = amount;
-    if (amount === 0) { if (this.action === "move") this.beginAction("idle", now); return; }
-    if (this.action !== "move") this.beginAction("move", now);
-    this.root.position.x = Math.max(-6.25, Math.min(6.25, this.root.position.x + amount * delta * this.speed));
-  }
-
-  setGuard(active: boolean, now: number) {
-    if (this.isDown || this.action === "strike" || this.action === "damaged") return;
-    if (active && this.action !== "guard") this.beginAction("guard", now);
-    if (!active && this.action === "guard") this.beginAction(this.moveAmount === 0 ? "idle" : "move", now);
-  }
-
-  startStrike(now: number) {
-    if (!this.canStrike || now < this.cooldownUntil) return false;
-    this.beginAction("strike", now, 0.42);
-    this.cooldownUntil = now + 0.82;
-    this.impactAt = now + 0.17;
-    this.impactResolved = false;
-    return true;
-  }
-
-  needsImpact(now: number) {
-    if (this.action !== "strike" || this.impactResolved || now < this.impactAt) return false;
-    this.impactResolved = true;
-    return true;
-  }
-
-  receiveDamage(damage: number, now: number) {
-    const guarded = this.isGuarding;
-    const resolvedDamage = guarded ? Math.max(2, Math.ceil(damage * this.profile.guardMultiplier)) : damage;
-    this.hp = Math.max(0, this.hp - resolvedDamage);
-    if (this.hp === 0) this.beginAction("down", now, Number.POSITIVE_INFINITY);
-    else if (!guarded) this.beginAction("damaged", now, 0.28);
-    return { guarded, damage: resolvedDamage };
-  }
-
-  reset(x: number, now: number) {
-    this.hp = this.profile.maxHp;
-    this.moveAmount = 0;
-    this.beginAction("idle", now);
-    this.cooldownUntil = 0;
-    this.root.position.set(x, -1.2, 0);
-  }
-
-  update(now: number, delta: number) {
-    if (this.action !== "down" && this.actionUntil && now > this.actionUntil) this.beginAction(this.moveAmount === 0 ? "idle" : "move", now);
-    const frameCount = this.action === "move" || this.action === "strike" ? 4 : this.action === "guard" ? 3 : 2;
-    const frameRate = this.action === "move" ? 9 : this.action === "strike" ? 10 : this.action === "guard" ? 7 : 3;
-    const frame = Math.floor((now - this.actionStarted) * frameRate) % frameCount;
-    this.applyFrame(frame, now);
-    this.shield.isVisible = this.action === "guard";
-    this.shield.rotation.z += delta * 0.9;
-    this.strike.isVisible = this.action === "strike" && now > this.impactAt - 0.05 && now < this.impactAt + 0.15;
-    this.flair.isVisible = this.strike.isVisible;
-    this.strike.scaling.x = this.strike.isVisible ? 0.76 + frame * 0.18 : 0.5;
-    this.spriteMaterial.emissiveColor = this.action === "damaged" ? this.flare.scale(0.48) : this.action === "guard" ? this.accent.scale(0.16) : new Color3(0.12, 0.12, 0.12);
-  }
-
-  private beginAction(action: MechaAction, now: number, duration = 0) {
-    this.action = action;
-    this.actionStarted = now;
-    this.actionUntil = duration ? now + duration : 0;
-  }
-
-  private resetPose() {
-    (Object.keys(this.parts) as FramePart[]).forEach((name) => {
-      const [x, y] = this.basePose[name];
-      const directional = name === "helmet" || name === "visor" || name === "core" || name === "armFront" ? this.direction : 1;
-      const part = this.parts[name];
-      part.position.x = x * directional;
-      part.position.y = y;
-      part.rotation.z = 0;
-      part.scaling.setAll(1);
-    });
-    this.root.rotation.z = 0;
-    this.sprite.position.set(0, 0, -0.18);
-  }
-
-  private applyFrame(frame: number, now: number) {
-    this.resetPose();
-    const parts = this.parts;
-    if (this.action === "idle") {
-      const lift = frame === 0 ? 0 : 0.025;
-      parts.torso.position.y += lift;
-      parts.core.scaling.setAll(frame === 0 ? 0.88 : 1.12);
-    } else if (this.action === "move") {
-      const stride = frame % 2 === 0 ? 1 : -1;
-      parts.legLeft.rotation.z = stride * 0.22;
-      parts.legRight.rotation.z = -stride * 0.22;
-      parts.armFront.rotation.z = -this.direction * stride * 0.17;
-      parts.armBack.rotation.z = this.direction * stride * 0.14;
-      this.sprite.position.y = frame === 1 || frame === 3 ? 0.07 : 0;
-    } else if (this.action === "strike") {
-      const phase = Math.min(3, frame);
-      if (phase === 0) { this.root.rotation.z = -this.direction * 0.08; parts.armFront.position.x -= this.direction * 0.16; }
-      if (phase === 1) { parts.armFront.position.x += this.direction * 0.52; parts.armFront.rotation.z = -this.direction * 0.62; this.sprite.position.x = this.direction * 0.13; }
-      if (phase === 2) { parts.armFront.position.x += this.direction * 0.64; parts.armFront.rotation.z = -this.direction * 0.72; this.sprite.position.x = this.direction * 0.18; parts.core.scaling.setAll(1.25); }
-      if (phase === 3) { parts.armFront.position.x += this.direction * 0.25; parts.armFront.rotation.z = -this.direction * 0.24; }
-    } else if (this.action === "guard") {
-      const brace = frame === 1 ? 0.08 : 0.03;
-      this.root.rotation.z = -this.direction * brace;
-      parts.armFront.position.x += this.direction * 0.24;
-      parts.armBack.position.x += this.direction * 0.11;
-      parts.legLeft.rotation.z = this.direction * 0.05;
-      parts.legRight.rotation.z = -this.direction * 0.05;
-      this.shield.scaling.setAll(frame === 1 ? 1.08 : 0.94);
-    } else if (this.action === "damaged") {
-      this.root.rotation.z = this.direction * 0.11;
-      this.sprite.position.x = -this.direction * 0.12;
-      parts.torso.position.x = -this.direction * 0.11;
-    } else if (this.action === "down") {
-      this.root.rotation.z = this.direction * 1.12;
-      this.sprite.position.y = -0.72;
-    }
-    this.shadow.scaling.x = this.action === "down" ? 1.45 : 1.03 - Math.abs(this.sprite.position.y) * 1.25;
-    parts.core.rotation.z = Math.sin(now * 7) * 0.12;
-  }
+  get x() { return this.root.position.x; } get maxHp() { return this.profile.maxHp; } get speed() { return this.profile.speed; } get strikeDamage() { return this.profile.strikeDamage; } get isDown() { return this.action === "down"; } get isGuarding() { return this.action === "guard"; } get canStrike() { return !this.isDown && this.action !== "damaged"; }
+  setProfile(profile: MechaProfile) { this.profile = profile; this.label = profile.label; this.accent = Color3.FromHexString(profile.accent); this.flare = Color3.FromHexString(profile.flare); this.root.scaling.setAll(profile.frameScale); this.parts.torso.scaling.x = profile.chassis === "bulwark" || profile.chassis === "brute" ? 1.22 : profile.chassis === "scout" || profile.chassis === "phantom" ? 0.83 : 1; this.parts.shoulderLeft.scaling.setAll(profile.chassis === "heavy" || profile.chassis === "bulwark" ? 1.24 : 1); this.parts.shoulderRight.scaling.setAll(profile.chassis === "heavy" || profile.chassis === "bulwark" ? 1.24 : 1); this.engineMaterials.forEach((material) => { material.diffuseColor = this.flare; material.emissiveColor = this.flare; }); }
+  move(amount: number, delta: number, now: number) { if (this.isDown || this.action === "strike" || this.action === "damaged") return; this.moveAmount = amount; if (amount === 0) { if (this.action === "move") this.beginAction("idle", now); return; } if (this.action !== "move") this.beginAction("move", now); this.root.position.x = Math.max(-6.25, Math.min(6.25, this.root.position.x + amount * delta * this.speed)); }
+  setGuard(active: boolean, now: number) { if (this.isDown || this.action === "strike" || this.action === "damaged") return; if (active && this.action !== "guard") this.beginAction("guard", now); if (!active && this.action === "guard") this.beginAction(this.moveAmount === 0 ? "idle" : "move", now); }
+  startStrike(now: number) { if (!this.canStrike || now < this.cooldownUntil) return false; this.beginAction("strike", now, 0.42); this.cooldownUntil = now + 0.82; this.impactAt = now + 0.17; this.impactResolved = false; return true; }
+  needsImpact(now: number) { if (this.action !== "strike" || this.impactResolved || now < this.impactAt) return false; this.impactResolved = true; return true; }
+  receiveDamage(damage: number, now: number) { const guarded = this.isGuarding; const resolvedDamage = guarded ? Math.max(2, Math.ceil(damage * this.profile.guardMultiplier)) : damage; this.hp = Math.max(0, this.hp - resolvedDamage); if (this.hp === 0) this.beginAction("down", now, Number.POSITIVE_INFINITY); else if (!guarded) this.beginAction("damaged", now, 0.28); return { guarded, damage: resolvedDamage }; }
+  reset(x: number, now: number) { this.hp = this.profile.maxHp; this.moveAmount = 0; this.beginAction("idle", now); this.cooldownUntil = 0; this.root.position.set(x, -1.2, 0); }
+  update(now: number, delta: number) { if (this.action !== "down" && this.actionUntil && now > this.actionUntil) this.beginAction(this.moveAmount === 0 ? "idle" : "move", now); const frameCount = this.action === "move" || this.action === "strike" ? 4 : this.action === "guard" ? 3 : 2; const frameRate = this.action === "move" ? 9 : this.action === "strike" ? 10 : this.action === "guard" ? 7 : 3; const frame = Math.floor((now - this.actionStarted) * frameRate) % frameCount; this.applyFrame(frame, now); this.shield.isVisible = this.action === "guard"; this.shield.rotation.z += delta * 0.9; this.strike.isVisible = this.action === "strike" && now > this.impactAt - 0.05 && now < this.impactAt + 0.15; this.flair.isVisible = this.strike.isVisible; this.strike.scaling.x = this.strike.isVisible ? 0.76 + frame * 0.18 : 0.5; const output = this.action === "down" ? 0 : this.action === "move" ? 1.24 : this.action === "strike" ? 1.45 : this.action === "guard" ? 0.7 : this.action === "damaged" ? 0.34 : 0.58 + Math.sin(now * 6) * 0.12; this.engineFlares.forEach((flare, index) => { flare.isVisible = output > 0; flare.scaling.x = 0.55 + output * (0.92 + index * 0.1); flare.scaling.y = 0.5 + output * 0.5; }); this.spriteMaterial.emissiveColor = this.action === "damaged" ? this.flare.scale(0.48) : this.action === "guard" ? this.accent.scale(0.16) : new Color3(0.12, 0.12, 0.12); }
+  private beginAction(action: MechaAction, now: number, duration = 0) { this.action = action; this.actionStarted = now; this.actionUntil = duration ? now + duration : 0; }
+  private resetPose() { (Object.keys(this.parts) as FramePart[]).forEach((name) => { const [x, y] = this.basePose[name]; const directional = name === "helmet" || name === "visor" || name === "core" || name === "armFront" ? this.direction : 1; const part = this.parts[name]; part.position.x = x * directional; part.position.y = y; part.rotation.z = 0; if (name !== "torso" && name !== "shoulderLeft" && name !== "shoulderRight") part.scaling.setAll(1); }); this.root.rotation.z = 0; this.sprite.position.set(0, 0, -0.18); }
+  private applyFrame(frame: number, now: number) { this.resetPose(); const parts = this.parts; if (this.action === "idle") { const lift = frame === 0 ? 0 : 0.025; parts.torso.position.y += lift; parts.core.scaling.setAll(frame === 0 ? 0.88 : 1.12); } else if (this.action === "move") { const stride = frame % 2 === 0 ? 1 : -1; parts.legLeft.rotation.z = stride * 0.22; parts.legRight.rotation.z = -stride * 0.22; parts.armFront.rotation.z = -this.direction * stride * 0.17; parts.armBack.rotation.z = this.direction * stride * 0.14; this.sprite.position.y = frame === 1 || frame === 3 ? 0.07 : 0; } else if (this.action === "strike") { const phase = Math.min(3, frame); if (phase === 0) { this.root.rotation.z = -this.direction * 0.08; parts.armFront.position.x -= this.direction * 0.16; } if (phase === 1) { parts.armFront.position.x += this.direction * 0.52; parts.armFront.rotation.z = -this.direction * 0.62; this.sprite.position.x = this.direction * 0.13; } if (phase === 2) { parts.armFront.position.x += this.direction * 0.64; parts.armFront.rotation.z = -this.direction * 0.72; this.sprite.position.x = this.direction * 0.18; parts.core.scaling.setAll(1.25); } if (phase === 3) { parts.armFront.position.x += this.direction * 0.25; parts.armFront.rotation.z = -this.direction * 0.24; } } else if (this.action === "guard") { const brace = frame === 1 ? 0.08 : 0.03; this.root.rotation.z = -this.direction * brace; parts.armFront.position.x += this.direction * 0.24; parts.armBack.position.x += this.direction * 0.11; parts.legLeft.rotation.z = this.direction * 0.05; parts.legRight.rotation.z = -this.direction * 0.05; this.shield.scaling.setAll(frame === 1 ? 1.08 : 0.94); } else if (this.action === "damaged") { this.root.rotation.z = this.direction * 0.11; this.sprite.position.x = -this.direction * 0.12; parts.torso.position.x = -this.direction * 0.11; } else if (this.action === "down") { this.root.rotation.z = this.direction * 1.12; this.sprite.position.y = -0.72; } this.shadow.scaling.x = this.action === "down" ? 1.45 : 1.03 - Math.abs(this.sprite.position.y) * 1.25; parts.core.rotation.z = Math.sin(now * 7) * 0.12; }
 }

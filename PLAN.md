@@ -1,48 +1,41 @@
-# Game Plan: Pixel Mecha Battle
+# Game Plan: Pixel Mecha Battle // Campaign Console
 
 ## Gameplay Design
 
-Pixel Mecha Battle is a single-screen 2D duel. The player pilots **Blue Vanguard** against the autonomous **Red Raider**. Both units begin with 100 HP. Win by reducing the opposing mech to zero HP; lose if Blue Vanguard reaches zero first.
-
-The enhanced **Tournament Link** mode begins in Hangar Select and runs as a best-of-three encounter. The player selects Blue Vanguard, Ironclad, or Sparkrunner before launch; the selected frame supplies a specific integrity, speed, strike, and guard profile. Every round re-arms both fighters at full integrity, while the first combatant to two round markers wins the match.
-
-| System | Player | Opponent | Rule |
-|---|---|---|---|
-| Movement | `A` / `D` or arrow keys | Intent-driven arena movement | Both fighters stay inside the catwalk bounds. |
-| Strike | `J` or STRIKE button | Short-range combat AI | A strike damages only when the target is in range and cannot land repeatedly during cooldown. |
-| Guard | Hold `K` or GUARD button | Short defensive AI windows | Guard converts incoming damage to a small chip hit. |
-| Vitality | Blue HP rail | Red HP rail | Both begin at 100; rails visibly segment and flash after damage. |
-| Round state | `R` or RESET button | N/A | Defeat freezes combat, shows the winner, and permits a full reset. |
+Pixel Mecha Battle expands from a single tournament into a compact campaign loop. Players begin at the **Command Deck**, inspect the mission board, choose a theatre, select from a five-frame Blue Faction roster, and launch a best-of-three mission battle. Each secured mission awards salvage credits and increases the active mission count. The campaign UI exposes achievements, reward cache status, roster data, and accessible settings without interrupting the core side-on duel.
 
 ## Risk Tasks
 
-### 1. Mecha State Animation
-- **Why isolated:** Movement, guarding, striking, damage recoil, and defeat are fast visual state changes that can overlap or leave a fighter stuck in the wrong pose.
-- **Approach:** Use a compact explicit action state for each fighter. Position movement is permitted only when the state allows it; every short-lived action owns an expiry timestamp. Visual offsets, scales, tint, and effects are driven from the state rather than from independent timers.
-- **Verify:** Idle → move → idle, move → strike → idle, idle → guard → idle, and strike → damaged → idle transitions read without pose snapping. A defeated fighter stays disabled and performs no further actions.
+### 1. Combat State Expansion and Mission Profiles
+- **Why isolated:** Mission selection changes opponent stats, reward values, labels, background treatment, and match messaging while the existing best-of-three state machine must remain readable and stable.
+- **Approach:** Keep the duel engine as the authority for active / round-result / match-result behavior. Pass a typed mission definition into launch, apply the associated opponent profile, and publish the active mission in the HUD snapshot.
+- **Verify:** Moving from Command Deck → Mission Board → Hangar → Battle produces the selected mission title, opponent identity, reward amount, and theatre treatment. A mission round still resets both combatants correctly and ends only after two wins.
 
-### 2. Collision Range and Combat Timing
-- **Why isolated:** A side-on duel becomes unplayable if attacks hit at any distance, guard applies after the hit, or both actors hit more than once during the same animation.
-- **Approach:** Evaluate each strike once at an authored impact point, use a fixed horizontal range check, and record a per-fighter cooldown. The defender’s current guard state is sampled at the same impact moment.
-- **Verify:** Attacks miss beyond range, damage occurs once per valid strike, guard applies chip damage while active, and a strike cannot repeat until its cooldown ends.
+### 2. Distinct Mecha Silhouettes and Engine Animation
+- **Why isolated:** A larger roster needs visually distinct CSS and Babylon frame variants, and layered engine plumes can easily conflict with strike, guard, damage, or down poses.
+- **Approach:** Extend each frame with a silhouette variant class and procedural rear exhaust / core activity. Gate plume intensity from the mecha action state so idle, move, strike, guard, damage, and down transitions remain explicit.
+- **Verify:** Every Blue frame has a readable profile from the Hangar. Engines idle-pulse, intensify during movement and strikes, dampen under guard, and stop when down. Strike → damage → idle and move → guard → move transitions show no pose snapping.
+
+### 3. Progression and Reward Persistence
+- **Why isolated:** Rewards and achievements must not duplicate on render loops or be lost when players navigate within the cabinet.
+- **Approach:** Track campaign credits, completed missions, and earned achievement IDs in a small local browser save. Award a mission once when a new victory state is observed, then update the React command UI from that snapshot.
+- **Verify:** Winning a mission adds only its listed salvage amount once. The same completion updates the Mission Board, Reward Cache, and Achievements display without refresh. A fresh reload restores the local campaign snapshot.
 
 ## Main Build
 
-Build a full-viewport Babylon.js orthographic stage with a generated Rustbelt Arena backdrop and two generated mecha plane sprites. Add a React-based HUD around the canvas for energy rails, round information, controls, an event ticker, an action guide, a touch-friendly control cluster, and win/loss handling. Use a deterministic `?demo` autopilot that visibly exercises movement, guard, attack, damage, and reset states for visual review.
-
-The shipped presentation also uses a resilient CSS pixel stage beneath the HUD. It supplies a clear warm industrial hangar, animated procedural mecha silhouettes, and four-frame action-state poses in the preview environment while the underlying Babylon world retains combat ownership and frame-state simulation.
+Build a full-screen **Campaign Console** around the existing Rustbelt duel. The Command Deck has a cinematic roster backdrop, current salvage and achievement telemetry, and direct access to Missions, Roster, Rewards, Achievements, and Settings. The Mission Board contains four authored operations with escalating foes and distinct arena labels. Hangar Select expands to five playable frames with strong stat trade-offs. The arena gains mission-themed background layers, ambient ally silhouettes, extra foreground machinery, animated engine trails, stronger impact presentation, and a mission objective panel.
 
 - **Assets:**
-  - Rustbelt Arena generated backdrop, filling the arena’s rear layer.
-  - Blue Vanguard and Red Raider generated cutout mecha artwork for the fighters.
-  - Reactor core generated graphic used in the brand and in the HUD.
-  - Procedural Babylon geometry for floor rails, smoke particles, sparks, HP values, and effects.
+  - Expanded visual target: `/manus-storage/pixel-mecha-expanded-visual-target_4bbaee58.png` — 16:9 visual QA anchor.
+  - Orbital scrapyard theatre: `/manus-storage/mission-theatre-orbital-scrapyard_bd3c7520.png` — full-width Command Deck / mission background.
+  - Command roster artwork: `/manus-storage/mecha-roster-command-deck_499e092e.png` — full-width home-screen art.
+  - Reward cache emblems: `/manus-storage/reward-cache-emblems_828578b5.png` — Reward and Achievement decorative asset.
 - **Verify:**
-  - Blue movement direction follows keyboard and button input; fighters cannot leave the catwalk.
-  - Strike is visibly directional, hits only in range, and respects cooldown.
-  - Guard communicates its active state and reduces incoming damage.
-  - HP rails, event ticker, and win/loss overlay accurately reflect the world state.
-  - The opponent moves, guards, and attacks under a straightforward readable AI.
-  - `?demo` visibly produces an active battle without manual input.
-  - No missing textures, off-screen HUD overlap, runtime errors, or placeholder-looking main visual elements.
-  - The final stage matches the target’s side-on camera, warm industrial palette, fighter scale, and visual density.
+  - Command Deck has clear paths to mission, roster, reward, achievement, and settings views, with an obvious return action from each.
+  - Five playable Blue frames and four opponent mission profiles have legible visual and statistical differences.
+  - The selected mission propagates into the battle HUD, enemy profile, mission objective, and victory reward screen.
+  - Engine effects, combat effects, HUD, mission backgrounds, and touch controls remain visible at desktop and mobile sizes.
+  - Reward and achievement values change only after a player victory and persist locally.
+  - `?demo` still visibly produces a live combat sequence without manual input.
+  - No missing generated-asset URLs, overflow, blocking overlay conflicts, or browser console errors occur during capture.
+  - Reference consistency: side-on camera, dense industrial background, cyan / amber / oxide palette, readable combat scale, and premium pixel-cabinet presentation.

@@ -8,7 +8,7 @@ import type { Scene } from "@babylonjs/core/scene";
 import { AudioManager } from "./AudioManager";
 import { InputManager } from "./InputManager";
 import { Mecha } from "./Mecha";
-import { LOADOUTS, RED_RAIDER, type HudState, type InputAction, type LoadoutKey, type MatchState } from "./types";
+import { LOADOUTS, MISSIONS, type HudState, type InputAction, type LoadoutKey, type MatchState, type MissionDefinition, type MissionKey } from "./types";
 
 const BACKDROP_URL = "/manus-storage/rustbelt-arena-backdrop_1351a937.png";
 const BLUE_MECHA_URL = "/manus-storage/blue-vanguard-mecha_07647d6a.png";
@@ -24,11 +24,12 @@ export class GameWorld {
   private readonly demo: boolean;
   private matchState: MatchState = "select";
   private selectedLoadout: LoadoutKey = "vanguard";
+  private mission: MissionDefinition = MISSIONS.scrapline;
   private round = 1;
   private playerRounds = 0;
   private enemyRounds = 0;
   private nextRoundAt = 0;
-  private message = "HANGAR LINK // SELECT A FRAME";
+  private message = "COMMAND LINK // SELECT AN OPERATION";
   private lastHudPublish = 0;
   private nextAiAt = 0;
   private lastStepAt = 0;
@@ -38,14 +39,15 @@ export class GameWorld {
   private impactFlash: AbstractMesh;
   private impactFlashUntil = 0;
   private smoke: AbstractMesh[] = [];
+  private stageGlow: StandardMaterial;
 
   constructor(scene: Scene, publishHud: (state: HudState) => void, demo: boolean) {
     this.scene = scene;
     this.publishHud = publishHud;
     this.demo = demo;
-    this.buildStage();
+    this.stageGlow = this.buildStage();
     this.player = new Mecha(scene, { id: "player", startX: -3.55, direction: 1, textureUrl: BLUE_MECHA_URL, profile: LOADOUTS.vanguard });
-    this.enemy = new Mecha(scene, { id: "enemy", startX: 3.55, direction: -1, textureUrl: RED_MECHA_URL, profile: RED_RAIDER });
+    this.enemy = new Mecha(scene, { id: "enemy", startX: 3.55, direction: -1, textureUrl: RED_MECHA_URL, profile: this.mission.opponent });
     this.input = new InputManager(() => this.returnToSelect());
     this.impactFlash = MeshBuilder.CreateDisc("impact-flash", { radius: 0.55, tessellation: 8 }, scene);
     this.impactFlash.position.z = -0.55;
@@ -57,21 +59,24 @@ export class GameWorld {
     this.impactFlash.material = flashMaterial;
     this.impactFlash.isVisible = false;
     this.demoStart = performance.now() / 1000;
-    if (demo) this.startMatch("vanguard", true);
+    if (demo) this.startMatch("vanguard", "scrapline", true);
     else this.emitHud(true);
   }
 
   setAction(action: InputAction, pressed: boolean) { this.input.set(action, pressed); }
 
-  startMatch(loadout: LoadoutKey, demoLaunch = false) {
+  startMatch(loadout: LoadoutKey, missionKey: MissionKey, demoLaunch = false) {
     const now = performance.now() / 1000;
     this.selectedLoadout = loadout;
+    this.mission = MISSIONS[missionKey];
     this.player.setProfile(LOADOUTS[loadout]);
+    this.enemy.setProfile(this.mission.opponent);
+    this.stageGlow.emissiveColor = Color3.FromHexString(this.mission.opponent.flare).scale(0.24);
     this.round = 1;
     this.playerRounds = 0;
     this.enemyRounds = 0;
     this.matchState = "active";
-    this.message = "ROUND 01 // SIGNAL GREEN";
+    this.message = `${this.mission.code} // SIGNAL GREEN`;
     this.player.reset(-3.55, now);
     this.enemy.reset(3.55, now);
     this.demoStart = now;
@@ -83,7 +88,7 @@ export class GameWorld {
   returnToSelect() {
     const now = performance.now() / 1000;
     this.matchState = "select";
-    this.message = "HANGAR LINK // SELECT A FRAME";
+    this.message = "COMMAND LINK // SELECT AN OPERATION";
     this.player.reset(-3.55, now);
     this.enemy.reset(3.55, now);
     this.emitHud(true);
@@ -112,7 +117,7 @@ export class GameWorld {
   private beginNextRound(now: number) {
     this.round += 1;
     this.matchState = "active";
-    this.message = `ROUND 0${this.round} // SIGNAL GREEN`;
+    this.message = `${this.mission.code} // ROUND 0${this.round}`;
     this.player.reset(-3.55, now);
     this.enemy.reset(3.55, now);
     this.audio.play("round");
@@ -134,12 +139,12 @@ export class GameWorld {
     if (Math.abs(distance) > 2.05) { this.enemy.move(distance > 0 ? -1 : 1, delta, now); return; }
     this.enemy.move(0, delta, now);
     if (now < this.nextAiAt) return;
-    this.nextAiAt = now + 0.88;
-    const beat = Math.floor(now * 2.1) % 4;
+    this.nextAiAt = now + Math.max(0.6, 0.97 - this.mission.difficulty * 0.07);
+    const beat = Math.floor(now * (2.1 + this.mission.difficulty * 0.16)) % 4;
     if (beat === 0) {
       this.enemy.setGuard(true, now);
-      this.message = "RED RAIDER // BRACE SIGNAL";
-      window.setTimeout(() => this.enemy.setGuard(false, performance.now() / 1000), 360);
+      this.message = `${this.enemy.label} // BRACE SIGNAL`;
+      window.setTimeout(() => this.enemy.setGuard(false, performance.now() / 1000), 340);
     } else if (beat === 1 || beat === 3) {
       if (this.enemy.startStrike(now)) this.audio.play("strike");
     } else this.enemy.move(0.55, delta, now);
@@ -185,7 +190,7 @@ export class GameWorld {
     const enemyWon = this.enemyRounds >= 2;
     if (playerWon || enemyWon) {
       this.matchState = playerWon ? "match-victory" : "match-defeat";
-      this.message = playerWon ? "TOURNAMENT LINK // SECURED" : "TOURNAMENT LINK // BREACHED";
+      this.message = playerWon ? `${this.mission.code} // OBJECTIVE SECURED` : `${this.mission.code} // FRAME BREACHED`;
       this.audio.play(playerWon ? "victory" : "defeat");
     } else {
       this.matchState = "round-result";
@@ -210,27 +215,48 @@ export class GameWorld {
     if (!force && now - this.lastHudPublish < 0.08) return;
     this.lastHudPublish = now;
     const profile = LOADOUTS[this.selectedLoadout];
-    this.publishHud({ playerHp: this.player.hp, playerMaxHp: this.player.maxHp, enemyHp: this.enemy.hp, enemyMaxHp: this.enemy.maxHp, playerState: this.player.action, enemyState: this.enemy.action, playerX: this.player.x, enemyX: this.enemy.x, matchState: this.matchState, round: this.round, playerRounds: this.playerRounds, enemyRounds: this.enemyRounds, playerLabel: profile.label, playerCallsign: profile.callsign, selectedLoadout: this.selectedLoadout, soundOn: this.audio.isEnabled, message: this.message });
+    this.publishHud({ playerHp: this.player.hp, playerMaxHp: this.player.maxHp, enemyHp: this.enemy.hp, enemyMaxHp: this.enemy.maxHp, playerState: this.player.action, enemyState: this.enemy.action, playerX: this.player.x, enemyX: this.enemy.x, matchState: this.matchState, round: this.round, playerRounds: this.playerRounds, enemyRounds: this.enemyRounds, playerLabel: profile.label, playerCallsign: profile.callsign, enemyLabel: this.mission.opponent.label, enemyCallsign: this.mission.opponent.callsign, selectedLoadout: this.selectedLoadout, missionKey: this.mission.key, missionTitle: this.mission.title, missionObjective: this.mission.objective, missionReward: this.mission.reward, theatreClass: this.mission.theatreClass, soundOn: this.audio.isEnabled, message: this.message });
   }
 
   private buildStage() {
     const sky = MeshBuilder.CreatePlane("rustbelt-sky", { width: 16, height: 9 }, this.scene);
     sky.position = new Vector3(0, 0, 2.8);
     const skyMaterial = new StandardMaterial("rustbelt-sky-material", this.scene);
-    skyMaterial.diffuseColor = Color3.FromHexString("#b7a180"); skyMaterial.emissiveColor = Color3.FromHexString("#594b37"); skyMaterial.disableLighting = true; sky.material = skyMaterial;
+    skyMaterial.diffuseColor = Color3.FromHexString("#b7a180");
+    skyMaterial.emissiveColor = Color3.FromHexString("#594b37");
+    skyMaterial.disableLighting = true;
+    sky.material = skyMaterial;
     const factoryMaterial = new StandardMaterial("factory-fallback-material", this.scene);
-    factoryMaterial.diffuseColor = Color3.FromHexString("#5d4938"); factoryMaterial.emissiveColor = Color3.FromHexString("#281f18");
+    factoryMaterial.diffuseColor = Color3.FromHexString("#5d4938");
+    factoryMaterial.emissiveColor = Color3.FromHexString("#281f18");
     for (let i = -6; i <= 6; i += 2) { const factory = MeshBuilder.CreateBox(`factory-${i}`, { width: 1.28, height: 1.2 + Math.abs(i % 3) * 0.45, depth: 0.08 }, this.scene); factory.position.set(i, 0.25, 2.58); factory.material = factoryMaterial; }
     for (const x of [-5.7, 5.5]) { const stack = MeshBuilder.CreateBox(`stack-${x}`, { width: 0.42, height: 3.1, depth: 0.08 }, this.scene); stack.position.set(x, 1.05, 2.53); stack.material = factoryMaterial; }
     const crane = MeshBuilder.CreateBox("factory-crane", { width: 5.7, height: 0.18, depth: 0.08 }, this.scene); crane.position.set(-3.1, 2.55, 2.5); crane.material = factoryMaterial;
     const hook = MeshBuilder.CreateBox("factory-hook", { width: 0.08, height: 1.5, depth: 0.08 }, this.scene); hook.position.set(-0.7, 1.76, 2.5); hook.material = factoryMaterial;
-    const backdrop = MeshBuilder.CreatePlane("rustbelt-backdrop", { width: 16, height: 9 }, this.scene); backdrop.position = new Vector3(0, 0, 2);
-    const backdropMaterial = new StandardMaterial("rustbelt-backdrop-material", this.scene); const backdropTexture = new Texture(BACKDROP_URL, this.scene, true, false); backdropTexture.hasAlpha = false; backdropMaterial.diffuseTexture = backdropTexture; backdropMaterial.diffuseColor = Color3.White(); backdropMaterial.emissiveColor = new Color3(0.48, 0.48, 0.48); backdropMaterial.disableLighting = true; backdropMaterial.backFaceCulling = false; backdropMaterial.alpha = 0.36; backdrop.material = backdropMaterial;
-    const deck = MeshBuilder.CreateBox("catwalk-deck", { width: 16, height: 0.54, depth: 0.15 }, this.scene); deck.position.set(0, -2.55, -0.15);
-    const deckMaterial = new StandardMaterial("catwalk-material", this.scene); deckMaterial.diffuseColor = Color3.FromHexString("#27302f"); deckMaterial.emissiveColor = Color3.FromHexString("#0d1111"); deck.material = deckMaterial;
+    const backdrop = MeshBuilder.CreatePlane("rustbelt-backdrop", { width: 16, height: 9 }, this.scene);
+    backdrop.position = new Vector3(0, 0, 2);
+    const backdropMaterial = new StandardMaterial("rustbelt-backdrop-material", this.scene);
+    const backdropTexture = new Texture(BACKDROP_URL, this.scene, true, false);
+    backdropTexture.hasAlpha = false;
+    backdropMaterial.diffuseTexture = backdropTexture;
+    backdropMaterial.diffuseColor = Color3.White();
+    backdropMaterial.emissiveColor = new Color3(0.48, 0.48, 0.48);
+    backdropMaterial.disableLighting = true;
+    backdropMaterial.backFaceCulling = false;
+    backdropMaterial.alpha = 0.36;
+    backdrop.material = backdropMaterial;
+    const deck = MeshBuilder.CreateBox("catwalk-deck", { width: 16, height: 0.54, depth: 0.15 }, this.scene);
+    deck.position.set(0, -2.55, -0.15);
+    const deckMaterial = new StandardMaterial("catwalk-material", this.scene);
+    deckMaterial.diffuseColor = Color3.FromHexString("#27302f");
+    deckMaterial.emissiveColor = Color3.FromHexString("#0d1111");
+    deck.material = deckMaterial;
     for (let i = -7; i <= 7; i += 1) { const stripe = MeshBuilder.CreateBox(`hazard-${i}`, { width: 0.38, height: 0.22, depth: 0.035 }, this.scene); stripe.position.set(i + 0.2, -2.54, -0.32); stripe.rotation.z = -0.5; const material = new StandardMaterial(`hazard-material-${i}`, this.scene); material.diffuseColor = Color3.FromHexString(i % 2 === 0 ? "#e5b72b" : "#151919"); material.emissiveColor = Color3.FromHexString(i % 2 === 0 ? "#57420a" : "#050505"); stripe.material = material; }
-    const railMaterial = new StandardMaterial("rail-material", this.scene); railMaterial.diffuseColor = Color3.FromHexString("#0e1413"); railMaterial.emissiveColor = Color3.FromHexString("#0f2623");
+    const railMaterial = new StandardMaterial("rail-material", this.scene);
+    railMaterial.diffuseColor = Color3.FromHexString("#0e1413");
+    railMaterial.emissiveColor = Color3.FromHexString("#0f2623");
     for (const y of [-2.18, -2.83]) { const rail = MeshBuilder.CreateBox(`rail-${y}`, { width: 16, height: 0.05, depth: 0.05 }, this.scene); rail.position.set(0, y, -0.34); rail.material = railMaterial; }
     for (let i = 0; i < 4; i += 1) { const puff = MeshBuilder.CreateDisc(`smoke-${i}`, { radius: 0.25 + i * 0.05, tessellation: 8 }, this.scene); puff.position.set(-6.1 + i * 0.34, 2 + i * 0.36, 1.1); const puffMaterial = new StandardMaterial(`smoke-material-${i}`, this.scene); puffMaterial.diffuseColor = Color3.FromHexString("#aaa18d"); puffMaterial.alpha = 0.19; puffMaterial.disableLighting = true; puff.material = puffMaterial; this.smoke.push(puff); }
+    return skyMaterial;
   }
 }
