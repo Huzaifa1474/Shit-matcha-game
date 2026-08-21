@@ -36,3 +36,8 @@
 - [x] Define a distinctive command-bay composition centered on deployment, selected frame identity, and campaign progress.
 - [x] Implement the redesigned home page with richer operation cards, frame-led art direction, and direct navigation into key player flows.
 - [x] Validate the Command Deck at desktop and mobile widths, refine visual hierarchy, and run production checks.
+- [x] Audit the current five-frame roster, available reward state, combat loadout contracts, and three stage-boss definitions.
+- [x] Design 20 distinct collection frames with custom names, roles, acquisition paths, and non-generic visual records.
+- [x] Implement purchasable and reward-earned frame ownership, collection filtering, locked-state clarity, and loadout selection.
+- [x] Author three unique stage bosses with distinctive names, silhouettes, attack behaviors, and boss-intro copy.
+- [x] Validate roster ownership, purchase and reward loops, boss presentation, desktop/mobile collection usability, and production build output.
