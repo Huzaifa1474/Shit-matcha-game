@@ -49,3 +49,7 @@
 - [x] Implement directional input buffering, launch and airborne-juggle states, damage scaling, hit-stop feedback, and live combo telemetry.
 - [x] Replace Armory schematic figures with existing authored art for the five supported frames and retain labeled fallback records for frames without artwork.
 - [x] Validate directional combo execution and Armory art display across desktop/mobile views, then run checks and save a checkpoint.
+- [x] Audit the Command Deck, Armory, mission board, and battle HUD for contrast, color overload, panel hierarchy, and mobile-density issues.
+- [x] Establish a refined warm-steel, parchment, hazard-yellow, cobalt, vermilion, and Reactor Teal token hierarchy with consistent active, warning, and powered states.
+- [x] Recompose the main interface panels, navigation, Armory cards, and combat controls around clearer focal points and tactile cabinet materials.
+- [x] Verify the visual update at desktop and mobile widths, run production checks, and save a checkpoint.

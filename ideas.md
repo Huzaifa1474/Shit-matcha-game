@@ -76,5 +76,8 @@ Example lines:
 - Armory records should read as physical maintenance bays with large framed portraits, visible service-grid hardware, and warm plated materials instead of dense dark database cards.
 - Directional combo telemetry may cross the arena frame only while it communicates an active launcher, juggle, or finisher, and must not obscure either fighter’s silhouette or the strike lane.
 - Catalog language remains concise and operational: state the frame, system, command, or acquisition condition without conventional product copy.
+- The PIXEL // MECHA lockup appears as a stenciled machine insignia on primary menu states, anchored by the Reactor Teal glyph and supported by hazard-yellow manufacturer marks.
+- Press Start 2P is reserved for command-grade language—titles, buttons, HUD states, HP values, and combat calls—while Space Grotesk carries explanatory campaign and chassis copy.
+- Mission and Armory screens use service grids, rail segments, plated materials, and physical slot geometry so neither reads as a generic terminal panel.
 
 The wordmark is a condensed, stenciled **PIXEL // MECHA** lockup interrupted by a central reactor glyph. The graphic mark is a heavy angular teal reactor core: a hexagonal chassis around a four-pronged electric aperture. It is always shown independently of text when space is limited.
