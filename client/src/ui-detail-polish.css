@@ -1,0 +1,182 @@
+/* Detail pass: turn the remaining dashboard read into installed cabinet hardware. */
+
+.console-content { isolation: isolate; }
+.console-content::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  z-index: -1;
+  inset: -18px -10px 0;
+  opacity: .82;
+  background:
+    linear-gradient(90deg, transparent 0 4%, rgba(240,191,69,.46) 4% 4.35%, transparent 4.35% 95.65%, rgba(240,191,69,.46) 95.65% 96%, transparent 96%),
+    repeating-linear-gradient(90deg, rgba(0,0,0,.22) 0 22px, transparent 22px 68px),
+    repeating-linear-gradient(0deg, transparent 0 48px, rgba(251,240,207,.06) 48px 49px);
+  border-top: 1px solid rgba(251,240,207,.16);
+  border-bottom: 1px solid rgba(251,240,207,.1);
+}
+
+.console-content > * { position: relative; z-index: 1; }
+.command-nav { position: relative; }
+.command-nav::after {
+  content: "POWER BUS // NOMINAL";
+  position: absolute;
+  right: 0;
+  bottom: 3px;
+  padding: 3px 0 3px 42px;
+  color: var(--teal);
+  font: 4px "Press Start 2P", monospace;
+  letter-spacing: .13em;
+  background: radial-gradient(circle at 7px 50%, var(--teal) 0 3px, transparent 4px), radial-gradient(circle at 21px 50%, var(--teal) 0 3px, transparent 4px), radial-gradient(circle at 35px 50%, rgba(25,199,181,.34) 0 3px, transparent 4px);
+}
+
+.console-nav-button.active::after,
+.campaign-board .stage-tabs button.active::after {
+  content: "";
+  position: absolute;
+  right: 5px;
+  top: 5px;
+  width: 4px;
+  height: 4px;
+  background: var(--teal);
+  box-shadow: 0 0 8px var(--teal), -7px 0 0 rgba(25,199,181,.46);
+}
+.console-nav-button { position: relative; }
+
+/* A service bay backdrop gives every menu plate depth without competing with copy. */
+.command-bay-grid,
+.campaign-board .stage-rail,
+.collection-grid {
+  position: relative;
+}
+.command-bay-grid::before,
+.campaign-board .stage-rail::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  z-index: 0;
+  inset: 7px;
+  border: 1px solid rgba(251,240,207,.11);
+  background: repeating-linear-gradient(90deg, transparent 0 29px, rgba(251,240,207,.07) 29px 30px), repeating-linear-gradient(0deg, transparent 0 31px, rgba(251,240,207,.035) 31px 32px);
+}
+.command-bay-grid > *, .campaign-board .stage-rail > * { position: relative; z-index: 1; }
+.deployment-module::after,
+.frame-gantry::after,
+.campaign-rail-console::after {
+  content: "";
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  top: 8px;
+  right: 8px;
+  opacity: .8;
+  background: radial-gradient(circle, var(--teal) 0 2px, rgba(25,199,181,.16) 3px 5px, transparent 6px);
+  box-shadow: -2px 0 0 rgba(0,0,0,.5), 0 0 9px rgba(25,199,181,.34);
+}
+
+/* Strengthen the single active recovery without turning the Armory into a generic product grid. */
+.collection-card:first-child {
+  grid-column: span 2;
+  border-color: rgba(25,199,181,.68) !important;
+  background: linear-gradient(145deg, rgba(24,61,56,.98), rgba(92,68,39,.96) 48%, rgba(18,29,26,.99)) !important;
+  box-shadow: 6px 7px 0 rgba(0,0,0,.44), inset 0 0 0 2px rgba(25,199,181,.11), 0 0 24px rgba(25,199,181,.12) !important;
+}
+.collection-card:first-child .collection-specimen { min-height: 220px; }
+.collection-card:first-child .frame-specimen.frame-art { transform: scale(1.66) !important; }
+.collection-card:first-child::before {
+  content: "ACTIVE RECOVERY // BLUE FACTION";
+  position: absolute;
+  z-index: 5;
+  left: 9px;
+  bottom: 8px;
+  padding: 4px 5px;
+  color: #ccfff7;
+  border: 1px solid rgba(25,199,181,.62);
+  background: rgba(8,30,27,.86);
+  font: 4px "Press Start 2P", monospace;
+}
+.collection-card.owned .collection-specimen::after {
+  content: "◈";
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  color: var(--teal);
+  font: 10px "Press Start 2P", monospace;
+  text-shadow: 0 0 12px rgba(25,199,181,.75);
+}
+.collection-card.locked { filter: saturate(.72); }
+.collection-card.locked:hover { filter: saturate(.95) brightness(1.08); }
+.collection-card footer button:not(:disabled),
+.level-card:not(:disabled) { touch-action: manipulation; }
+
+/* Make acquisition and campaign states more distinct at a glance. */
+.level-card { overflow: visible; }
+.level-card:not(.locked)::after {
+  content: "READY";
+  position: absolute;
+  right: 8px;
+  top: -7px;
+  padding: 3px 5px;
+  color: #b9fff6;
+  border: 1px solid rgba(25,199,181,.52);
+  background: #143934;
+  font: 3px "Press Start 2P", monospace;
+}
+.level-card.complete::after { content: "SECURED"; color: #142c28; background: #73dacc; border-color: #e4fff6; }
+.level-card.locked::after { content: "LOCKED"; color: rgba(251,240,207,.5); background: #343a35; border-color: rgba(251,240,207,.22); }
+.level-card.commander-link::after { content: "COMMANDER"; color: #39200d; background: var(--hazard); border-color: #ffe092; }
+.level-card footer { border-top-color: rgba(251,240,207,.13) !important; }
+
+/* Active power and contrast are carried by teal lamps; yellow remains selection/hazard. */
+.frame-readout small,
+.rail-footer small,
+.module-specs b,
+.collection-status.owned { color: var(--teal) !important; }
+.campaign-rail-console .rail-stop.active { border-color: rgba(25,199,181,.72) !important; box-shadow: inset 3px 0 0 var(--teal), 0 0 15px rgba(25,199,181,.14); }
+.campaign-rail-console .rail-stop.active i { color: var(--teal) !important; }
+
+/* Large guards remain mechanical and readable, not a glowing centerpiece. */
+.prism-shield-art {
+  width: 82% !important;
+  height: 82% !important;
+  right: -28% !important;
+  top: 5% !important;
+  opacity: .84;
+  filter: drop-shadow(0 0 9px rgba(38,231,255,.72)) contrast(1.15) saturate(.82) !important;
+}
+.custom-mecha.enemy .prism-shield-art {
+  left: -28% !important;
+  right: auto !important;
+  filter: hue-rotate(145deg) saturate(1.05) drop-shadow(0 0 9px rgba(255,90,192,.62)) contrast(1.15) !important;
+}
+
+.action-button:focus-visible,
+.console-nav-button:focus-visible,
+.level-card:focus-visible,
+.collection-card button:focus-visible,
+.primary-console-button:focus-visible,
+.secondary-console-button:focus-visible {
+  outline: 3px solid var(--teal) !important;
+  outline-offset: 3px;
+}
+
+@media (max-width: 700px) {
+  .command-nav::after { display: none; }
+  .console-content::before { inset: -8px -4px 0; opacity: .58; }
+  .command-bay-grid::before,.campaign-board .stage-rail::after { inset: 4px; }
+  .collection-card:first-child { grid-column: 1 / -1; }
+  .collection-card:first-child .collection-specimen { min-height: 198px; }
+  .collection-card:first-child .frame-specimen.frame-art { transform: scale(1.4) !important; }
+  .collection-card:first-child::before { font-size: 3px; }
+  .level-card:not(.locked)::after { right: 5px; top: -6px; font-size: 2px; }
+  .prism-shield-art { width: 74% !important; height: 74% !important; right: -16% !important; top: 8% !important; }
+  .custom-mecha.enemy .prism-shield-art { left: -16% !important; }
+  .command-bay-grid > * { min-height: 0; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .command-nav::after { animation: power-bus 1.6s steps(2, end) infinite; }
+  .collection-card:first-child .collection-specimen::after { animation: active-lamp .9s steps(2, end) infinite; }
+}
+@keyframes power-bus { 50% { filter: brightness(1.55); } }
+@keyframes active-lamp { 50% { opacity: .45; } }

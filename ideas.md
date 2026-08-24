@@ -79,5 +79,8 @@ Example lines:
 - The PIXEL // MECHA lockup appears as a stenciled machine insignia on primary menu states, anchored by the Reactor Teal glyph and supported by hazard-yellow manufacturer marks.
 - Press Start 2P is reserved for command-grade language—titles, buttons, HUD states, HP values, and combat calls—while Space Grotesk carries explanatory campaign and chassis copy.
 - Mission and Armory screens use service grids, rail segments, plated materials, and physical slot geometry so neither reads as a generic terminal panel.
+- Non-combat screens always include visible cabinet hardware such as service rails, bay lights, plated recesses, chassis marks, or stage-window depth rather than large empty terminal fields.
+- Acid yellow marks hazards and selections; Reactor Teal denotes powered systems, active telemetry, cockpit lamps, and the persistent reactor identity.
+- Guard shields, slashes, and impact flashes stay hard-edged and tactical, never overtaking both mecha silhouettes or the central strike lane.
 
 The wordmark is a condensed, stenciled **PIXEL // MECHA** lockup interrupted by a central reactor glyph. The graphic mark is a heavy angular teal reactor core: a hexagonal chassis around a four-pronged electric aperture. It is always shown independently of text when space is limited.

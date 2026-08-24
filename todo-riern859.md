@@ -53,3 +53,7 @@
 - [x] Establish a refined warm-steel, parchment, hazard-yellow, cobalt, vermilion, and Reactor Teal token hierarchy with consistent active, warning, and powered states.
 - [x] Recompose the main interface panels, navigation, Armory cards, and combat controls around clearer focal points and tactile cabinet materials.
 - [x] Verify the visual update at desktop and mobile widths, run production checks, and save a checkpoint.
+- [x] Audit remaining navigation, card interaction, status-feedback, and narrow-screen UX gaps after the latest visual-system pass.
+- [x] Define a focused improvement for active/locked/complete card states, compact status rails, contextual navigation feedback, and touch-friendly control behavior.
+- [x] Implement the new physical-cabinet interaction details across the command, Level Board, Armory, and battle interface.
+- [x] Validate desktop/mobile presentation, run production checks, and save a checkpoint.
