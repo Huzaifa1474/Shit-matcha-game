@@ -57,3 +57,7 @@
 - [x] Define a focused improvement for active/locked/complete card states, compact status rails, contextual navigation feedback, and touch-friendly control behavior.
 - [x] Implement the new physical-cabinet interaction details across the command, Level Board, Armory, and battle interface.
 - [x] Validate desktop/mobile presentation, run production checks, and save a checkpoint.
+- [x] Audit existing frame profile data, Armory card controls, and responsive catalog layout for comparison-mode reuse.
+- [x] Define the pinned-frame comparison flow, combat-stat deltas, move-tree summaries, ownership states, and mobile arrangement.
+- [x] Implement two-frame pinning, the side-by-side comparison bay, and direct frame assignment from the comparison view.
+- [x] Validate comparison interactions on desktop/mobile, run production checks, and save a checkpoint.

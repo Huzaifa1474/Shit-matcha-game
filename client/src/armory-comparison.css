@@ -1,0 +1,129 @@
+/* Two-slot Armory diagnostic bay. */
+.comparison-bay {
+  position: relative;
+  margin: 18px 0 22px;
+  border: 2px solid rgba(25,199,181,.58);
+  background: linear-gradient(145deg, rgba(10,34,31,.96), rgba(58,46,31,.94) 49%, rgba(14,25,22,.98));
+  box-shadow: 6px 6px 0 rgba(0,0,0,.4), inset 0 0 0 2px rgba(255,255,255,.05), 0 0 21px rgba(25,199,181,.1);
+}
+.comparison-bay::before,
+.comparison-bay::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  z-index: 0;
+  background: repeating-linear-gradient(90deg, transparent 0 19px, rgba(238,255,250,.08) 19px 20px);
+}
+.comparison-bay::before { inset: 9px 12px auto; height: 1px; }
+.comparison-bay::after { inset: auto 12px 9px; height: 1px; }
+.comparison-heading,
+.comparison-stage { position: relative; z-index: 1; }
+.comparison-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 16px 18px 14px;
+  border-bottom: 1px solid rgba(25,199,181,.35);
+  background: linear-gradient(90deg, rgba(8,22,20,.74), rgba(17,46,41,.42), transparent);
+}
+.comparison-heading > div:first-child > span {
+  color: var(--teal);
+  font: 5px "Press Start 2P", monospace;
+  letter-spacing: .14em;
+}
+.comparison-heading h3 { margin: 8px 0 6px; color: #e5fff8; font: 13px "Press Start 2P", monospace; letter-spacing: -.04em; }
+.comparison-heading p { max-width: 510px; margin: 0; color: rgba(251,240,207,.71); font: 14px/1.35 "Space Grotesk", sans-serif; }
+.comparison-actions { display: grid; grid-template-columns: minmax(125px,1fr) auto minmax(125px,1fr); gap: 8px; align-items: end; min-width: min(440px, 46vw); }
+.comparison-actions label { display: grid; gap: 5px; color: rgba(251,240,207,.72); font: 4px "Press Start 2P", monospace; }
+.comparison-actions select {
+  min-width: 0;
+  height: 34px;
+  padding: 0 7px;
+  border: 1px solid rgba(25,199,181,.5);
+  border-radius: 0;
+  color: #eafff9;
+  background: #10231f;
+  font: 5px "Press Start 2P", monospace;
+}
+.comparison-actions button,
+.comparison-frame footer button {
+  min-height: 34px;
+  padding: 8px 9px;
+  border: 1px solid rgba(240,191,69,.72);
+  color: #3b270c;
+  background: linear-gradient(145deg, #ffe27a, #d89731);
+  box-shadow: 2px 2px 0 rgba(0,0,0,.38), inset 0 0 0 1px rgba(255,255,255,.42);
+  font: 5px "Press Start 2P", monospace;
+  cursor: pointer;
+}
+.comparison-actions button:active,
+.comparison-frame footer button:active { transform: translate(1px,1px) scale(.98); }
+
+.comparison-stage { display: grid; grid-template-columns: minmax(0,1fr) minmax(215px,.5fr) minmax(0,1fr); gap: 12px; padding: 14px; }
+.comparison-frame {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto 148px 1fr auto;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--frame-accent) 65%, rgba(251,240,207,.28));
+  background: linear-gradient(145deg, color-mix(in srgb, var(--frame-accent) 20%, #1a2925), rgba(14,24,22,.96) 58%);
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,.04), 4px 4px 0 rgba(0,0,0,.34);
+}
+.comparison-frame.active { outline: 2px solid var(--teal); outline-offset: -5px; }
+.comparison-frame header { display: flex; justify-content: space-between; gap: 7px; padding: 8px 9px; border-bottom: 1px solid rgba(251,240,207,.14); color: rgba(251,240,207,.68); font: 4px "Press Start 2P", monospace; }
+.comparison-frame header b { color: var(--teal); font-weight: normal; text-align: right; }
+.comparison-specimen { position: relative; display: grid; place-items: center; overflow: hidden; background: radial-gradient(circle at 50% 48%, color-mix(in srgb, var(--frame-accent) 34%, transparent), transparent 54%), repeating-linear-gradient(90deg, transparent 0 17px, rgba(251,240,207,.09) 17px 18px), linear-gradient(180deg, rgba(10,31,28,.88), rgba(63,47,30,.86)); }
+.comparison-specimen::after { content: ""; position: absolute; inset: 8px; border: 1px solid rgba(251,240,207,.16); pointer-events: none; }
+.comparison-specimen .frame-specimen.frame-art { transform: scale(1.25) !important; }
+.comparison-copy { padding: 11px 12px 9px; }
+.comparison-copy strong { display: block; color: #fff2cb; font: 8px/1.42 "Press Start 2P", monospace; }
+.comparison-copy > small { display: block; margin-top: 4px; color: var(--frame-accent); font: 4px "Press Start 2P", monospace; }
+.comparison-copy p { margin: 9px 0; color: rgba(251,240,207,.69); font: 13px/1.32 "Space Grotesk", sans-serif; }
+.comparison-copy dl { display: grid; grid-template-columns: auto 1fr; gap: 5px 9px; margin: 0; padding-top: 8px; border-top: 1px solid rgba(251,240,207,.15); }
+.comparison-copy dt { color: #f0bf45; font: 4px "Press Start 2P", monospace; }
+.comparison-copy dd { margin: 0; color: rgba(251,240,207,.76); font: 4px/1.3 "Press Start 2P", monospace; }
+.comparison-frame footer { display: flex; align-items: center; min-height: 45px; padding: 8px 10px; border-top: 1px solid rgba(25,199,181,.24); background: rgba(5,15,13,.36); }
+.comparison-frame footer button { width: 100%; }
+.comparison-frame footer span { color: rgba(251,240,207,.48); font: 4px "Press Start 2P", monospace; }
+
+.comparison-metrics { align-self: stretch; display: grid; align-content: center; gap: 2px; padding: 11px 8px; border: 1px solid rgba(240,191,69,.4); background: linear-gradient(180deg, rgba(45,39,24,.95), rgba(12,27,24,.98)); box-shadow: inset 0 0 0 2px rgba(0,0,0,.23); }
+.comparison-metrics > span { display: block; margin: 0 0 6px; color: #f9d66a; text-align: center; font: 4px "Press Start 2P", monospace; letter-spacing: .1em; }
+.compare-metric { display: grid; grid-template-columns: 1fr minmax(63px,auto) 1fr; gap: 5px; align-items: center; padding: 6px 2px; border-top: 1px solid rgba(251,240,207,.1); }
+.compare-metric b { color: rgba(251,240,207,.7); font: 6px "Press Start 2P", monospace; text-align: center; }
+.compare-metric b.lead { color: #cffff7; text-shadow: 0 0 9px rgba(25,199,181,.62); }
+.compare-metric span { color: #e9be4d; font: 3px/1.45 "Press Start 2P", monospace; text-align: center; }
+
+.collection-card { position: relative; }
+.collection-pin-row { position: absolute; z-index: 8; top: 26px; left: 8px; display: flex; gap: 4px; }
+.collection-pin-row button { padding: 4px 5px; border: 1px solid rgba(251,240,207,.25); color: rgba(251,240,207,.7); background: rgba(10,20,18,.82); font: 3px "Press Start 2P", monospace; cursor: pointer; }
+.collection-pin-row button:hover,.collection-pin-row button.pinned { border-color: var(--teal); color: #d5fff8; background: #164740; box-shadow: 0 0 9px rgba(25,199,181,.36); }
+.collection-card.comparison-pinned { box-shadow: 0 0 0 2px rgba(25,199,181,.28), 5px 5px 0 rgba(0,0,0,.36), inset 0 0 0 2px rgba(25,199,181,.07) !important; }
+
+@media (max-width: 860px) {
+  .comparison-heading { display: grid; align-items: stretch; }
+  .comparison-actions { min-width: 0; }
+  .comparison-stage { grid-template-columns: minmax(0,1fr) minmax(170px,.42fr) minmax(0,1fr); gap: 8px; padding: 10px; }
+  .comparison-frame { grid-template-rows: auto 128px 1fr auto; }
+  .comparison-specimen .frame-specimen.frame-art { transform: scale(1.05) !important; }
+}
+
+@media (max-width: 700px) {
+  .comparison-bay { margin: 13px 0 16px; }
+  .comparison-heading { padding: 13px 12px; gap: 12px; }
+  .comparison-heading h3 { font-size: 10px; }
+  .comparison-heading p { font-size: 13px; }
+  .comparison-actions { grid-template-columns: 1fr auto 1fr; gap: 5px; }
+  .comparison-actions select { height: 31px; padding: 0 4px; font-size: 4px; }
+  .comparison-actions button { min-height: 31px; padding: 6px; font-size: 4px; }
+  .comparison-stage { grid-template-columns: 1fr; gap: 9px; padding: 10px; }
+  .comparison-frame { grid-template-rows: auto 136px 1fr auto; }
+  .comparison-metrics { order: 2; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 1px 9px; padding: 10px; }
+  .comparison-metrics > span { grid-column: 1 / -1; }
+  .compare-metric { padding: 5px 2px; grid-template-columns: 1fr 50px 1fr; }
+  .compare-metric b { font-size: 5px; }
+  .compare-metric span { font-size: 2px; }
+  .comparison-stage > .comparison-frame:last-child { order: 3; }
+  .collection-pin-row { top: 24px; left: 6px; }
+  .collection-pin-row button { padding: 4px; font-size: 2px; }
+}

@@ -1,0 +1,50 @@
+/* Review-led Armory bay refinement: the hardware supports the frames, never replaces them. */
+.collection-console {
+  background:
+    linear-gradient(145deg, rgba(28,43,37,.96), rgba(86,62,37,.84) 48%, rgba(17,29,25,.98)),
+    repeating-linear-gradient(90deg, transparent 0 88px, rgba(251,240,207,.035) 88px 89px) !important;
+}
+.comparison-bay {
+  overflow: hidden;
+  background:
+    linear-gradient(90deg, rgba(9,35,31,.92), rgba(29,45,34,.76) 47%, rgba(9,25,22,.96)),
+    repeating-linear-gradient(90deg, transparent 0 62px, rgba(251,240,207,.06) 62px 63px) !important;
+}
+.comparison-bay::before { inset: 7px 12px auto !important; height: 5px !important; border-top: 1px solid rgba(25,199,181,.55); border-bottom: 1px solid rgba(251,240,207,.13); background: repeating-linear-gradient(90deg, var(--teal) 0 3px, transparent 3px 31px) !important; }
+.comparison-heading { min-height: 93px; padding: 14px 18px 12px !important; }
+.comparison-heading h3 { color: #f7f0d1; text-shadow: 2px 2px 0 rgba(0,0,0,.45); }
+.comparison-heading > div:first-child { position: relative; padding-left: 13px; border-left: 3px solid var(--teal); }
+.comparison-heading > div:first-child::after { content: "BAY 04 // DIAGNOSTIC CLAMP"; position: absolute; left: 13px; bottom: -9px; color: rgba(25,199,181,.7); font: 3px "Press Start 2P",monospace; letter-spacing: .12em; }
+.comparison-actions { padding: 7px; border: 1px solid rgba(251,240,207,.15); background: rgba(7,16,14,.38); }
+.comparison-actions select { border-color: rgba(25,199,181,.8) !important; background: linear-gradient(145deg,#143933,#10231f) !important; }
+.comparison-actions button { color: #2c210e !important; }
+
+.comparison-stage { position: relative; padding: 18px 16px 16px !important; }
+.comparison-stage::before { content: ""; pointer-events: none; position: absolute; z-index: 0; inset: 7px 8px; border: 1px solid rgba(251,240,207,.12); background: repeating-linear-gradient(90deg, transparent 0 55px, rgba(251,240,207,.06) 55px 57px), repeating-linear-gradient(0deg, transparent 0 48px, rgba(251,240,207,.035) 48px 49px); }
+.comparison-stage > * { position: relative; z-index: 1; }
+.comparison-frame { border-width: 2px !important; box-shadow: 6px 7px 0 rgba(0,0,0,.38), inset 0 0 0 2px rgba(255,255,255,.045) !important; }
+.comparison-frame::before,.comparison-frame::after { content: ""; position: absolute; z-index: 4; width: 14px; height: 31px; top: 44%; border: 2px solid color-mix(in srgb,var(--frame-accent) 68%,#e5fff8); background: rgba(10,22,19,.66); box-shadow: inset 0 0 0 2px rgba(0,0,0,.36),0 0 10px color-mix(in srgb,var(--frame-accent) 35%,transparent); }
+.comparison-frame::before { left: -7px; border-right:0; }.comparison-frame::after { right: -7px; border-left:0; }
+.comparison-frame header { min-height: 31px; background: linear-gradient(90deg, rgba(8,30,27,.94), rgba(25,51,42,.6)); }
+.comparison-specimen { min-height: 168px; background: radial-gradient(circle at 50% 46%,color-mix(in srgb,var(--frame-accent) 44%,transparent),transparent 48%), repeating-linear-gradient(90deg,transparent 0 19px,rgba(251,240,207,.11) 19px 20px), linear-gradient(180deg,rgba(9,37,32,.97),rgba(76,54,31,.88)) !important; }
+.comparison-specimen::before { content: "SERVICE RAIL // LOCKED"; position: absolute; z-index: 3; left: 9px; top: 9px; padding: 3px 4px; color: color-mix(in srgb,var(--frame-accent) 76%,#e5fff8); border: 1px solid color-mix(in srgb,var(--frame-accent) 44%,transparent); background: rgba(7,20,17,.74); font: 3px "Press Start 2P",monospace; }
+.comparison-specimen .frame-specimen.frame-art { transform: scale(1.46) !important; }
+.comparison-copy { background: linear-gradient(180deg,rgba(17,28,24,.94),rgba(11,20,17,.94)); }
+.comparison-copy strong { font-size: 9px !important; }
+.comparison-copy p { max-width: 34ch; }
+.comparison-metrics { border-color: rgba(25,199,181,.46) !important; background: linear-gradient(180deg,rgba(16,47,41,.92),rgba(24,31,25,.98)) !important; }
+.comparison-metrics > span { color: var(--teal) !important; }
+.compare-metric span { color: rgba(251,240,207,.6) !important; }
+
+.collection-grid { counter-reset: armorybay; }
+.collection-card { counter-increment: armorybay; }
+.collection-card:not(:first-child) .collection-specimen { min-height: 164px; border-top: 3px solid rgba(251,240,207,.12); border-bottom: 7px solid transparent; border-image: repeating-linear-gradient(135deg,var(--hazard) 0 8px,#1a201b 8px 16px) 7; background: radial-gradient(circle at 50% 45%,color-mix(in srgb,currentColor 26%,transparent),transparent 56%),repeating-linear-gradient(90deg,transparent 0 18px,rgba(251,240,207,.09) 18px 19px),linear-gradient(180deg,rgba(20,43,37,.92),rgba(69,50,32,.9)) !important; }
+.collection-card:not(:first-child) .collection-specimen::before { content: "BAY // " counter(armorybay,decimal-leading-zero); position: absolute; z-index: 4; left: 7px; top: 7px; color: rgba(251,240,207,.66); font: 3px "Press Start 2P",monospace; letter-spacing: .1em; }
+.collection-card:not(:first-child) .collection-specimen::after { content: ""; position: absolute; z-index: 3; right: 8px; top: 7px; width: 8px; height: 8px; background: var(--teal); box-shadow: 0 0 10px rgba(25,199,181,.72); }
+.collection-card:not(:first-child) .frame-specimen.frame-art { transform: scale(1.24) !important; }
+.collection-card.comparison-pinned { border-color: rgba(25,199,181,.78) !important; }
+.collection-card.comparison-pinned .collection-pin-row button.pinned { box-shadow: 0 0 13px rgba(25,199,181,.62) !important; }
+
+@media (max-width:700px) {
+  .comparison-heading { min-height: 0; }.comparison-heading > div:first-child::after { display:none; }.comparison-stage { padding:13px 10px 11px !important; }.comparison-specimen { min-height:150px; }.comparison-specimen .frame-specimen.frame-art { transform: scale(1.25) !important; }.collection-card:not(:first-child) .collection-specimen { min-height:150px; }.collection-card:not(:first-child) .frame-specimen.frame-art { transform: scale(1.1) !important; }
+}
